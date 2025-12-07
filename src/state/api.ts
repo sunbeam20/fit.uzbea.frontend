@@ -380,7 +380,7 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://fit-uzbea-backend.vercel.app/api" || "/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json");
       const token =
@@ -415,6 +415,51 @@ export const api = createApi({
       providesTags: ["DashboardMetrics"],
     }),
 
+    // Products Search
+    searchProducts: build.query<Product[], string>({
+      query: (search) => `/product/search?q=${search}`,
+      providesTags: ["Product"],
+    }),
+    // Customers Search
+    searchCustomers: build.query<Customer[], string>({
+      query: (search) => `/customer/search?q=${search}`,
+      providesTags: ["Customer"],
+    }),
+    createSaleFromPOS: build.mutation<
+      Sale,
+      {
+        customer_id?: number;
+        items: Array<{
+          product_id: number;
+          quantity: number;
+          unitPrice: number;
+          discount?: {
+            type: "percentage" | "fixed";
+            value: number;
+          };
+        }>;
+        totalAmount: number;
+        totalPaid?: number;
+        discount?: number;
+      }
+    >({
+      query: (saleData) => ({
+        url: "/sale/pos",
+        method: "POST",
+        body: saleData,
+      }),
+      invalidatesTags: ["Sale", "Product"],
+    }),
+    // Get POS Products (for barcode scanning)
+    getPOSProducts: build.query<Product[], void>({
+      query: () => "/products/pos",
+      providesTags: ["Product"],
+    }),
+    // Scan barcode
+    scanBarcode: build.query<Product, string>({
+      query: (barcode) => `/products/barcode/${barcode}`,
+      providesTags: ["Product"],
+    }),
     // Products
     getProducts: build.query<Product[], void>({
       query: () => "/product",
@@ -763,10 +808,6 @@ export const api = createApi({
       }),
       invalidatesTags: ["Customer"],
     }),
-    searchCustomers: build.query<Customer[], string>({
-      query: (query) => `/customers/search?query=${query}`,
-      providesTags: ["Customer"],
-    }),
     getCustomerStats: build.query<CustomerStats, void>({
       query: () => "/customer/stats",
       providesTags: ["Customer"],
@@ -855,7 +896,6 @@ export const {
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
   useDeleteCustomerMutation,
-  useSearchCustomersQuery,
   useGetCustomerStatsQuery,
   useGetPurchasesQuery,
   useGetPurchaseStatisticsQuery,
@@ -869,4 +909,9 @@ export const {
   useLogoutMutation,
   useGetMeQuery,
   useUpdateProfileMutation,
+  useSearchProductsQuery,
+  useSearchCustomersQuery,
+  useCreateSaleFromPOSMutation,
+  useGetPOSProductsQuery,
+  useScanBarcodeQuery,
 } = api;
