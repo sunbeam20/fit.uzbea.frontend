@@ -380,7 +380,7 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+    baseUrl: "https://fit-uzbea-backend.vercel.app" || "/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json");
       const token =
