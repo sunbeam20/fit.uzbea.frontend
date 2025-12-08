@@ -6,10 +6,13 @@ import CardSalesSummary from "./CardSalesSummary";
 import CardExchangeSummary from "./CardExchangeSummary";
 import CardServiceSummary from "./CardServiceSummary";
 import CardStats from "./CardStats";
+import { useAppSelector } from "../redux";
 
 const Dashboard = () => {
+  
+  const showPanel = useAppSelector((state) => state.global.isPOSPanelOpen);
   return (
-    <div className="flex flex-col gap-8 pb-4 mt-20">
+    <div className={`flex flex-col gap-8 pb-4 mt-12 ${ showPanel ? "hidden" : ""}`}>
       {/* Stats Cards - Full width */}
       <div className="w-full">
         <CardStats />

@@ -71,35 +71,12 @@ const Sidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
   };
 
-  const sidebarClassNames = `fixed flex flex-col mt-20 ${
-    isSidebarCollapsed ? "w-0 md:w-16" : "w-72 md:w-64"
+  const sidebarClassNames = `fixed flex flex-col mt-12 ${
+    isSidebarCollapsed ? "w-0 md:w-12" : "w-72 md:w-60"
   } transition-all overflow-hidden h-full shadow-md z-40`;
 
   return (
     <div className={sidebarClassNames}>
-      {/* {top logo} */}
-      {/* <div
-        className={`flex gap-3 h-16 items-center ${
-          isSidebarCollapsed ? "px-4" : "px-8"
-        }`}
-      >
-        <Image src={logo} alt="logo" className="rounded w-7 h-7" />
-        <h1
-          className={`whitespace-nowrap transition-all duration-1000 ease-in-out ${
-            isSidebarCollapsed
-              ? "opacity-0 scale-x-0 w-0"
-              : "opacity-100 scale-x-100 w-auto"
-          } font-extrabold text-lg`}
-        >
-          FLOPPY IT
-        </h1>
-        <button
-          className="md:hidden px-3 py-3 rounded-full hover:bg-blue-100"
-          onClick={toggleSidebar}
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      </div> */}
       {/* Links */}
       <div className="flex-grow">
         <SidebarLink

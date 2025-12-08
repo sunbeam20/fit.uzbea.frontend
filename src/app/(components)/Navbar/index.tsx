@@ -29,13 +29,13 @@ import { logout } from "@/state/authSlice"; // Import your logout action
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  
+
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const isPOSPanelOpen = useAppSelector((state) => state.global.isPOSPanelOpen);
-  
+
   // Get auth state from Redux
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
@@ -46,7 +46,10 @@ const Navbar = () => {
   // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
         setIsProfileModalOpen(false);
       }
     };
@@ -75,23 +78,23 @@ const Navbar = () => {
     try {
       // Optional: Call your logout API endpoint if you have one
       // await fetch('/api/auth/logout', { method: 'POST' });
-      
+
       // Dispatch logout action to clear Redux state
       dispatch(logout());
-      
+
       // Clear any additional storage
-      localStorage.removeItem('user');
+      localStorage.removeItem("user");
       sessionStorage.clear();
-      
+
       // Clear cookies if you're using them
-      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
       // Redirect to login page
       router.push("/login");
       router.refresh(); // Refresh to ensure auth state is cleared
-      
-      console.log('Logged out successfully');
-      
+
+      console.log("Logged out successfully");
     } catch (error) {
       console.error("Logout error:", error);
       // Even if there's an error, clear client-side state
@@ -127,20 +130,31 @@ const Navbar = () => {
   // Get user initials for avatar
   const getUserInitials = () => {
     if (user?.name) {
-      const firstName = user.name.split(' ')[0].toUpperCase();
+      const firstName = user.name.split(" ")[0].toUpperCase();
       return firstName[0];
     }
-    return 'U';
+    return "U";
   };
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 flex items-center justify-between w-full h-16 px-4 lg:px-6 shadow-sm z-50 border-b ${
+      className={`fixed top-0 left-0 right-0 flex items-center justify-between w-full h-12 px-2 shadow-sm z-50 border-b ${
         isDarkMode ? "bg-black border-gray-700" : "bg-white border-gray-200"
       }`}
     >
       {/* LEFT SECTION - Logo & Navigation */}
       <div className="flex items-center gap-4">
+        {/* Sidebar Toggle */}
+        <button
+          onClick={toggleSidebar}
+          className={`p-2 rounded-lg transition-colors ${
+            isDarkMode
+              ? "hover:bg-gray-700 text-gray-300"
+              : "hover:bg-gray-100 text-gray-600"
+          } ${isPOSPanelOpen ? "hidden" : ""}`}
+        >
+          <Menu className="w-5 h-5" />
+        </button>
         {/* Logo & Brand */}
         <div className="flex items-center gap-3">
           <Image
@@ -150,29 +164,15 @@ const Navbar = () => {
           />
           <h1
             className={`font-bold text-lg whitespace-nowrap transition-all duration-300 ${
-              isSidebarCollapsed
-                ? "opacity-0 scale-95 w-0 overflow-hidden"
-                : "opacity-100 scale-100 w-auto"
-            } ${isDarkMode ? "text-white" : "text-gray-900"}`}
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
           >
             FLOPPY IT
           </h1>
         </div>
 
-        {/* Sidebar Toggle */}
-        <button
-          onClick={toggleSidebar}
-          className={`p-2 rounded-lg transition-colors ${
-            isDarkMode
-              ? "hover:bg-gray-700 text-gray-300"
-              : "hover:bg-gray-100 text-gray-600"
-          }`}
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
         {/* Search - Products (Desktop) */}
-        <div className="hidden md:block">
+        {/* <div className="hidden md:block">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -185,7 +185,7 @@ const Navbar = () => {
               }`}
             />
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* CENTER SECTION - Mobile Search */}
@@ -209,7 +209,7 @@ const Navbar = () => {
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
           {/* Customer Search */}
-          <div className="relative">
+          {/* <div className="relative">
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="search"
@@ -220,7 +220,7 @@ const Navbar = () => {
                   : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
               }`}
             />
-          </div>
+          </div> */}
 
           {/* Theme Toggle */}
           <button
@@ -240,7 +240,7 @@ const Navbar = () => {
           </button>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className={`relative ${isPOSPanelOpen ? "hidden" : ""}`}>
             <button
               className={`p-2 rounded-lg transition-colors ${
                 isDarkMode
@@ -261,10 +261,14 @@ const Navbar = () => {
             <button
               onClick={handleProfileClick}
               className={`flex items-center gap-2 pl-2 rounded-lg transition-colors ${
-                isDarkMode
-                  ? "hover:bg-gray-700"
-                  : "hover:bg-gray-100"
-              } ${isProfileModalOpen ? (isDarkMode ? "bg-gray-700" : "bg-gray-100") : ""}`}
+                isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+              } ${
+                isProfileModalOpen
+                  ? isDarkMode
+                    ? "bg-gray-700"
+                    : "bg-gray-100"
+                  : ""
+              }`}
             >
               <div
                 className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 ${
@@ -278,20 +282,23 @@ const Navbar = () => {
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}
               >
-                {user?.name.split(" ")[0] || 'User'}
+                {user?.name.split(" ")[0] || "User"}
               </span>
             </button>
 
             {/* Profile Modal */}
             {isProfileModalOpen && (
               <div className="absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg border z-50 animate-in fade-in-0 zoom-in-95">
-                <div className={`
+                <div
+                  className={`
                   rounded-lg p-2 space-y-1
-                  ${isDarkMode 
-                    ? "bg-gray-800 border-gray-700 text-white" 
-                    : "bg-white border-gray-200 text-gray-900"
+                  ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-700 text-white"
+                      : "bg-white border-gray-200 text-gray-900"
                   }
-                `}>
+                `}
+                >
                   {/* User Info */}
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
@@ -299,12 +306,14 @@ const Navbar = () => {
                         {getUserInitials()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{user?.name || 'User'}</p>
+                        <p className="font-semibold text-sm truncate">
+                          {user?.name || "User"}
+                        </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user?.email || 'user@example.com'}
+                          {user?.email || "user@example.com"}
                         </p>
                         <p className="text-xs text-blue-500 dark:text-blue-400 capitalize">
-                          {user?.role || 'User'}
+                          {user?.role || "User"}
                         </p>
                       </div>
                     </div>

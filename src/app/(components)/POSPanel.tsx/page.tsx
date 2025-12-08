@@ -391,16 +391,16 @@ const POSPanel = () => {
           fixed inset-0 z-50
           backdrop-blur-sm border-l border-white/10
           transition-transform duration-500 ease-[cubic-bezier(.25,.8,.25,1)]
-          p-4 overflow-hidden mt-16
+          p-2 overflow-hidden mt-12
           ${showPanel ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-3 grid-rows-5 gap-4 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 grid-rows-5 gap-2 h-full">
           {/* === LEFT SIDE (2 COLUMN 4 ROW) === */}
-          <div className="col-span-2 row-span-5 flex flex-col h-full gap-4">
+          <div className="col-span-2 row-span-5 flex flex-col h-full gap-2">
             {/* PRODUCT SEARCH SECTION */}
             <div
-              className={`rounded-2xl border p-4 backdrop-blur ${
+              className={`rounded-2xl border p-2 backdrop-blur ${
                 isDarkMode
                   ? "bg-gray-800/50 border-gray-700"
                   : "bg-white/50 border-gray-200"
@@ -408,27 +408,8 @@ const POSPanel = () => {
               ref={productSearchRef}
             >
               <div className="grid grid-cols-3 gap-4">
-                {/* Barcode Scanner */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    <Barcode className="inline mr-2" size={16} />
-                    Barcode Scan
-                  </label>
-                  <input
-                    type="text"
-                    value={barcodeInput}
-                    onChange={(e) => setBarcodeInput(e.target.value)}
-                    className={`w-full p-3 border rounded-xl ${
-                      isDarkMode
-                        ? "bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
-                        : "bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    }`}
-                    placeholder="Scan barcode..."
-                  />
-                </div>
-
                 {/* Product Search */}
-                <div className="col-span-2 relative">
+                <div className="col-span-3 relative">
                   <label className="block text-sm font-medium mb-1">
                     <Search className="inline mr-2" size={16} />
                     Search Products
@@ -443,23 +424,17 @@ const POSPanel = () => {
                             setShowProductResults(false);
                           }
                         }}
-                        className={`w-full p-3 border rounded-xl pl-10 ${
+                        className={`w-full p-2 border rounded-xl pl-2 ${
                           isDarkMode
                             ? "bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                             : "bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         }`}
-                        placeholder="Name, code, barcode..."
+                        placeholder="Enter Product Name/Barcode here..."
                         onFocus={() => {
                           if (productSearchTerm.length >= 2) {
                             setShowProductResults(true);
                           }
                         }}
-                      />
-                      <Search
-                        className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                          isDarkMode ? "text-gray-400" : "text-gray-500"
-                        }`}
-                        size={18}
                       />
                       {productsLoading && (
                         <div className="absolute right-3 top-3">
@@ -513,7 +488,7 @@ const POSPanel = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                  <table className="w-full text-center">
                     <thead>
                       <tr
                         className={`border-b font-bold ${
@@ -522,7 +497,7 @@ const POSPanel = () => {
                             : "border-gray-200 text-gray-700"
                         }`}
                       >
-                        <th className="py-3 px-2">Product</th>
+                        <th className="py-3 px-2 text-left">Product</th>
                         <th className="py-3 px-2">Qty</th>
                         <th className="py-3 px-2">Price</th>
                         <th className="py-3 px-2">Discount</th>
@@ -547,7 +522,7 @@ const POSPanel = () => {
                                 : "border-gray-200 hover:bg-gray-50"
                             }`}
                           >
-                            <td className="py-3 px-2">
+                            <td className="py-3 px-2 text-left">
                               <div>
                                 <div
                                   className={`font-medium ${
@@ -568,12 +543,12 @@ const POSPanel = () => {
                               </div>
                             </td>
                             <td className="py-3 px-2">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center justify-center">
                                 <button
                                   onClick={() =>
                                     handleUpdateQuantity(item.product.id, -1)
                                   }
-                                  className={`w-8 h-8 flex items-center justify-center border rounded transition-colors ${
+                                  className={`w-8 h-8 flex items-center justify-center border rounded transition-colors cursor-pointer ${
                                     isDarkMode
                                       ? "border-gray-600 hover:bg-gray-700 disabled:opacity-50"
                                       : "border-gray-300 hover:bg-gray-100 disabled:opacity-50"
@@ -593,7 +568,7 @@ const POSPanel = () => {
                                   onClick={() =>
                                     handleUpdateQuantity(item.product.id, 1)
                                   }
-                                  className={`w-8 h-8 flex items-center justify-center border rounded transition-colors ${
+                                  className={`w-8 h-8 flex items-center justify-center border rounded transition-colors cursor-pointer ${
                                     isDarkMode
                                       ? "border-gray-600 hover:bg-gray-700"
                                       : "border-gray-300 hover:bg-gray-100"
@@ -628,7 +603,7 @@ const POSPanel = () => {
                                     }`}
                                   >
                                     Save: $
-                                    {(price - discountedPrice).toFixed(2)}
+                                    {orderSummary.discount.toFixed(2)}
                                   </span>
                                 </div>
                               ) : (
@@ -637,7 +612,7 @@ const POSPanel = () => {
                                     setDiscountProductId(item.product.id);
                                     setShowDiscountModal(true);
                                   }}
-                                  className="text-blue-500 hover:text-blue-700 text-sm font-medium transition-colors"
+                                  className="text-blue-500 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer"
                                 >
                                   Add Discount
                                 </button>
@@ -668,7 +643,7 @@ const POSPanel = () => {
                                 onClick={() =>
                                   handleRemoveProduct(item.product.id)
                                 }
-                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors flex items-center gap-1"
+                                className="p-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors flex items-center gap-1 cursor-pointer"
                               >
                                 <Trash2 size={14} />
                                 <span className="text-xs">Remove</span>
@@ -747,10 +722,10 @@ const POSPanel = () => {
           </div>
 
           {/* === RIGHT SIDE (CUSTOMER & ACTIONS) === */}
-          <div className="col-span-1 row-span-5 flex flex-col gap-4">
+          <div className="col-span-1 row-span-5 flex flex-col gap-2">
             {/* CUSTOMER SEARCH */}
             <div
-              className={`rounded-2xl border p-4 backdrop-blur relative ${
+              className={`rounded-2xl border p-2 backdrop-blur relative ${
                 isDarkMode
                   ? "bg-gray-800/50 border-gray-700"
                   : "bg-white/50 border-gray-200"
@@ -774,12 +749,12 @@ const POSPanel = () => {
                       setShowCustomerResults(false);
                     }
                   }}
-                  className={`w-full p-3 border rounded-xl ${
+                  className={`w-full p-2 border rounded-xl ${
                     isDarkMode
                       ? "bg-gray-800 border-gray-600 text-white focus:border-blue-500 focus:ring-blue-500"
                       : "bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   }`}
-                  placeholder="Customer name, phone, email..."
+                  placeholder="Enter Customer Name/Phone/Email here..."
                   onFocus={() => {
                     if (customerSearchTerm.length >= 2) {
                       setShowCustomerResults(true);
@@ -846,7 +821,7 @@ const POSPanel = () => {
                           setSelectedCustomer(null);
                           showAlert("Customer removed", "info");
                         }}
-                        className={`p-1 rounded transition-colors ${
+                        className={`p-1 rounded transition-colors cursor-pointer ${
                           isDarkMode
                             ? "hover:bg-red-900/50"
                             : "hover:bg-red-100"
@@ -928,7 +903,7 @@ const POSPanel = () => {
                     </div>
                   ) : (
                     <div
-                      className={`text-center py-4 ${
+                      className={`text-center py-3 ${
                         isDarkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
@@ -947,7 +922,7 @@ const POSPanel = () => {
                     "info"
                   )
                 }
-                className={`w-full py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                   isDarkMode
                     ? "bg-gray-700 hover:bg-gray-600 text-white"
                     : "bg-gray-200 hover:bg-gray-300 text-gray-800"
@@ -959,13 +934,13 @@ const POSPanel = () => {
             </div>
             {/* ACTION BUTTONS */}
             <div
-              className={`rounded-2xl border p-4 backdrop-blur ${
+              className={`rounded-2xl border p-2 backdrop-blur ${
                 isDarkMode
                   ? "bg-gray-800/50 border-gray-700"
                   : "bg-white/50 border-gray-200"
               }`}
             >
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-1">
                 {/* Discount Button */}
                 <button
                   onClick={() => {
@@ -975,7 +950,7 @@ const POSPanel = () => {
                     }
                     setShowDiscountModal(true);
                   }}
-                  className="py-5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-colors flex items-center justify-center gap-2"
+                  className="py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Percent size={14} />
                   Discount
@@ -993,7 +968,7 @@ const POSPanel = () => {
                 ].map(({ label }) => (
                   <button
                     key={label}
-                    className={`py-5 rounded-xl font-bold border transition-colors flex items-center justify-center gap-2 ${
+                    className={`py-2 rounded-xl font-bold border transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                       isDarkMode
                         ? "border-gray-600 bg-gray-800/50 hover:bg-gray-700 text-white"
                         : "border-gray-300 bg-white/50 hover:bg-gray-100 text-gray-800"
@@ -1021,7 +996,7 @@ const POSPanel = () => {
                   setShowPaymentModal(true);
                 }}
                 disabled={creatingSale}
-                className={`w-full mt-4 text-white font-bold py-5 rounded-xl text-lg transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full mt-2 text-white font-bold py-2 rounded-xl text-lg transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                   creatingSale
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-green-500 hover:bg-green-600"
@@ -1034,14 +1009,13 @@ const POSPanel = () => {
                   </>
                 ) : (
                   <>
-                    <DollarSign size={20} />
                     Confirm Sell
                   </>
                 )}
               </button>
 
               {/* Cash Buttons */}
-              <div className="flex gap-3 mt-3">
+              <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => {
                     if (cart.length === 0) {
@@ -1051,18 +1025,16 @@ const POSPanel = () => {
                     setPaymentAmount(orderSummary.total.toString());
                     setShowPaymentModal(true);
                   }}
-                  className="flex-1 bg-green-200 hover:bg-green-300 text-black py-5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-green-200 hover:bg-green-300 text-black py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <DollarSign size={16} />
                   Cash IN
                 </button>
                 <button
                   onClick={() =>
                     showAlert("Cash Out functionality coming soon", "info")
                   }
-                  className="flex-1 bg-red-200 hover:bg-red-300 text-black py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-red-200 hover:bg-red-300 text-black py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <DollarSign size={16} />
                   Cash Out
                 </button>
               </div>
@@ -1071,11 +1043,11 @@ const POSPanel = () => {
               <button
                 onClick={handleClearAll}
                 disabled={cart.length === 0 && !selectedCustomer}
-                className={`w-full mt-3 py-5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                className={`w-full mt-2 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                   cart.length === 0 && !selectedCustomer
                     ? "bg-gray-300 cursor-not-allowed dark:bg-gray-700"
                     : "bg-gray-400 hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500"
-                } ${isDarkMode ? "text-white" : "text-gray-800"}`}
+                } ${isDarkMode ? "text-gray-800" : "text-gray-800"}`}
               >
                 <Trash2 size={16} />
                 CLEAR ALL
@@ -1097,10 +1069,10 @@ const POSPanel = () => {
           }}
         >
           <div
-            className={`border rounded-lg shadow-xl max-h-60 overflow-y-auto ${
+            className={`border rounded-2xl shadow-xl max-h-200 overflow-y-auto ${
               isDarkMode
                 ? "bg-gray-900 border-gray-700 text-white"
-                : "bg-white border-gray-200 text-gray-900"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
           >
             {searchProductsData.length === 0 ? (
@@ -1261,7 +1233,7 @@ const POSPanel = () => {
             </p>
             <button
               onClick={() => setShowAlertModal(false)}
-              className={`w-full py-2 rounded-lg font-medium transition-colors ${
+              className={`w-full py-2 rounded-lg font-medium transition-colors cursor-pointer ${
                 alertType === "error"
                   ? "bg-red-500 hover:bg-red-600"
                   : alertType === "success"
@@ -1304,7 +1276,7 @@ const POSPanel = () => {
                 <div className="flex gap-4">
                   <button
                     onClick={() => setDiscountType("percentage")}
-                    className={`flex-1 py-2 rounded transition-colors ${
+                    className={`flex-1 py-2 rounded transition-colors cursor-pointer ${
                       discountType === "percentage"
                         ? "bg-blue-500 text-white"
                         : isDarkMode
@@ -1316,7 +1288,7 @@ const POSPanel = () => {
                   </button>
                   <button
                     onClick={() => setDiscountType("fixed")}
-                    className={`flex-1 py-2 rounded transition-colors ${
+                    className={`flex-1 py-2 rounded transition-colors cursor-pointer ${
                       discountType === "fixed"
                         ? "bg-blue-500 text-white"
                         : isDarkMode
@@ -1358,13 +1330,13 @@ const POSPanel = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleApplyDiscount}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition-colors"
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition-colors cursor-pointer"
                 >
                   Apply Discount
                 </button>
                 <button
                   onClick={() => setShowDiscountModal(false)}
-                  className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 py-3 rounded-lg font-medium transition-colors cursor-pointer ${
                     isDarkMode
                       ? "bg-gray-700 hover:bg-gray-600 text-white"
                       : "bg-gray-300 hover:bg-gray-400 text-gray-800"
@@ -1453,7 +1425,7 @@ const POSPanel = () => {
                 <button
                   onClick={handlePayment}
                   disabled={creatingSale || !paymentAmount}
-                  className={`flex-1 py-3 rounded-lg font-bold transition-colors ${
+                  className={`flex-1 py-3 rounded-lg font-bold transition-colors cursor-pointer ${
                     creatingSale || !paymentAmount
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-green-500 hover:bg-green-600 text-white"
@@ -1463,7 +1435,7 @@ const POSPanel = () => {
                 </button>
                 <button
                   onClick={() => setShowPaymentModal(false)}
-                  className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 py-3 rounded-lg font-medium transition-colors cursor-pointer ${
                     isDarkMode
                       ? "bg-gray-700 hover:bg-gray-600 text-white"
                       : "bg-gray-300 hover:bg-gray-400 text-gray-800"

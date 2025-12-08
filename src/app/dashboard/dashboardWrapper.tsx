@@ -20,6 +20,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     (state) => state.global.isSidebarCollapsed
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const showPanel = useAppSelector((state) => state.global.isPOSPanelOpen);
   const pathname = usePathname(); // Add this hook
 
   console.log("🔐 DashboardWrapper:", { isAuthenticated, pathname });
@@ -49,7 +50,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         isDarkMode ? "bg-black text-white" : "bg-white text-black"
       } flex w-full min-h-screen`}
     >
-      <Sidebar />
+      {showPanel ? "" : <Sidebar />}
       <main
         className={`flex flex-col w-full h-full py-7 px-9 ${
           isSidebarCollapsed ? "md:pl-24" : "md:pl-72"
@@ -58,7 +59,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         <Navbar />
         {children}
         {/* <ProductsPage /> */}
-        <Footer />
+        {showPanel ? "" : <Footer />}
       </main>
     </div>
   );
