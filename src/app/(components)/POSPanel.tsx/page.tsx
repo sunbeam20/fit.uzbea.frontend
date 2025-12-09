@@ -9,12 +9,13 @@ import {
   Minus,
   Trash2,
   Percent,
-  DollarSign,
   UserPlus,
   X,
-  Barcode,
   Check,
   AlertCircle,
+  Loader2,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { debounce } from "lodash";
 import {
@@ -23,6 +24,8 @@ import {
   useCreateSaleFromPOSMutation,
   useScanBarcodeQuery,
   useGetPOSProductsQuery,
+  useGetCustomersQuery, // Add this import
+  useCreateCustomerMutation, // Add this import
   Product,
   Customer,
 } from "@/state/api";
@@ -69,10 +72,19 @@ const POSPanel = () => {
     { skip: barcodeInput.length < 3 }
   );
 
-  const { data: posProducts, refetch: refetchPOSProducts } =
-    useGetPOSProductsQuery();
+  const { data: posProducts } = useGetPOSProductsQuery();
   const [createSale, { isLoading: creatingSale }] =
     useCreateSaleFromPOSMutation();
+
+  // Add these queries for all customers and creating customers
+  const {
+    data: allCustomers,
+    isLoading: allCustomersLoading,
+    refetch: refetchAllCustomers,
+  } = useGetCustomersQuery();
+
+  const [createCustomer, { isLoading: creatingCustomer }] =
+    useCreateCustomerMutation();
 
   // States
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -103,6 +115,23 @@ const POSPanel = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProductResults, setShowProductResults] = useState(false);
   const [showCustomerResults, setShowCustomerResults] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
+  // Update current date and time every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper function to show alerts
   const showAlert = (
@@ -162,6 +191,7 @@ const POSPanel = () => {
     }, 500),
     []
   );
+
   // Debounced search for customers
   const debouncedCustomerSearch = useCallback(
     debounce((searchTerm: string) => {
@@ -170,6 +200,7 @@ const POSPanel = () => {
     }, 500),
     []
   );
+
   // Handle barcode scanning
   useEffect(() => {
     if (barcodeInput.length >= 3) {
@@ -219,6 +250,7 @@ const POSPanel = () => {
       dueAmount,
     });
   };
+
   // Add product to cart
   const handleAddProduct = (product: Product) => {
     const existingItem = cart.find((item) => item.product.id === product.id);
@@ -249,10 +281,12 @@ const POSPanel = () => {
     // Hide search results after adding
     setShowProductResults(false);
   };
+
   // Remove product from cart
   const handleRemoveProduct = (productId: number) => {
     setCart(cart.filter((item) => item.product.id !== productId));
   };
+
   // Update quantity
   const handleUpdateQuantity = (productId: number, change: number) => {
     setCart(
@@ -265,6 +299,7 @@ const POSPanel = () => {
       })
     );
   };
+
   // Apply discount
   const handleApplyDiscount = () => {
     if (!discountProductId || !discountValue) return;
@@ -309,12 +344,14 @@ const POSPanel = () => {
     setShowDiscountModal(false);
     showAlert("Discount applied successfully", "success");
   };
+
   // Select customer
   const handleSelectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerResults(false);
     showAlert(`Customer selected: ${customer.name}`, "success");
   };
+
   // Clear all
   const handleClearAll = () => {
     setCart([]);
@@ -329,6 +366,7 @@ const POSPanel = () => {
     setPaymentAmount("");
     showAlert("Cart cleared successfully", "success");
   };
+
   // Handle payment
   const handlePayment = () => {
     const paidAmount = parseFloat(paymentAmount) || 0;
@@ -371,6 +409,46 @@ const POSPanel = () => {
         showAlert("Failed to complete sale. Please try again.", "error");
       });
   };
+
+  // Handle add new customer
+  const handleAddNewCustomer = async () => {
+    if (!newCustomer.name.trim() || !newCustomer.phone.trim()) {
+      showAlert("Name and phone number are required", "error");
+      return;
+    }
+
+    try {
+      const result = await createCustomer(newCustomer).unwrap();
+      showAlert(`Customer ${result.name} added successfully!`, "success");
+      setSelectedCustomer(result);
+      refetchAllCustomers();
+      setShowAddCustomerModal(false);
+      setNewCustomer({ name: "", email: "", phone: "", address: "" });
+    } catch (error) {
+      showAlert("Failed to add customer. Please try again.", "error");
+    }
+  };
+
+  // Format date and time
+  const formatDateTime = (date: Date) => {
+    return {
+      date: date.toLocaleDateString("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+      time: date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
+    };
+  };
+
+  const { date, time } = formatDateTime(currentDateTime);
+
   // Get the position for search results
   const getSearchPosition = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (!ref.current) return { left: 0, top: 0, width: 0 };
@@ -602,8 +680,7 @@ const POSPanel = () => {
                                         : "text-gray-500"
                                     }`}
                                   >
-                                    Save: $
-                                    {orderSummary.discount.toFixed(2)}
+                                    Save: ${orderSummary.discount.toFixed(2)}
                                   </span>
                                 </div>
                               ) : (
@@ -732,14 +809,16 @@ const POSPanel = () => {
               }`}
               ref={customerSearchRef}
             >
-              <label
-                className={`block text-sm font-medium mb-1 ${
-                  isDarkMode ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                <Search className="inline mr-2" size={16} />
-                Search Customers
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label
+                  className={`block text-sm font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  <Search className="inline mr-2" size={16} />
+                  Search Customers
+                </label>
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -771,7 +850,7 @@ const POSPanel = () => {
 
             {/* Customers List */}
             <div
-              className={`rounded-2xl border p-4 backdrop-blur flex-1 ${
+              className={`rounded-2xl border p-4 backdrop-blur flex-1 flex flex-col ${
                 isDarkMode
                   ? "bg-gray-800/50 border-gray-700"
                   : "bg-white/50 border-gray-200"
@@ -779,28 +858,53 @@ const POSPanel = () => {
             >
               {/* Selected Customer Display - ALWAYS AT TOP */}
               <div className="mb-4">
-                <h3
-                  className={`font-semibold mb-2 ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Selected Customer
-                </h3>
+                <div className="flex justify-between items-center mb-2">
+                  <h3
+                    className={`font-semibold text-sm ${
+                      isDarkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Selected Customer
+                  </h3>
+                  <button
+                    onClick={() => refetchAllCustomers()}
+                    className={`p-1 rounded transition-colors cursor-pointer ${
+                      isDarkMode
+                        ? "hover:bg-gray-700 text-gray-400"
+                        : "hover:bg-gray-200 text-gray-500"
+                    }`}
+                    title="Refresh customers list"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                </div>
                 {selectedCustomer ? (
                   <div
                     className={`p-3 rounded-lg border ${
                       isDarkMode
-                        ? "border-blue-900 bg-blue-900/20"
-                        : "border-blue-200 bg-blue-50"
+                        ? "border-blue-500 bg-blue-900/20"
+                        : "border-blue-300 bg-blue-50"
                     }`}
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
-                        <div className="font-medium">
+                        <div className="font-medium text-sm">
                           {selectedCustomer.name}
                         </div>
                         <div
-                          className={`text-sm ${
+                          className={`text-xs mt-1 ${
                             isDarkMode ? "text-gray-300" : "text-gray-600"
                           }`}
                         >
@@ -808,7 +912,7 @@ const POSPanel = () => {
                         </div>
                         {selectedCustomer.email && (
                           <div
-                            className={`text-xs ${
+                            className={`text-xs mt-0.5 ${
                               isDarkMode ? "text-gray-400" : "text-gray-500"
                             }`}
                           >
@@ -821,14 +925,14 @@ const POSPanel = () => {
                           setSelectedCustomer(null);
                           showAlert("Customer removed", "info");
                         }}
-                        className={`p-1 rounded transition-colors cursor-pointer ${
+                        className={`p-1.5 rounded-full transition-colors cursor-pointer ${
                           isDarkMode
                             ? "hover:bg-red-900/50"
                             : "hover:bg-red-100"
                         }`}
                         title="Remove customer"
                       >
-                        <X size={16} className="text-red-500" />
+                        <X size={14} className="text-red-500" />
                       </button>
                     </div>
                   </div>
@@ -836,47 +940,62 @@ const POSPanel = () => {
                   <div
                     className={`p-3 rounded-lg border text-center ${
                       isDarkMode
-                        ? "border-gray-700 bg-gray-800/50 text-gray-400"
+                        ? "border-gray-700 bg-gray-800/30 text-gray-400"
                         : "border-gray-300 bg-gray-100/50 text-gray-500"
                     }`}
                   >
-                    No customer selected
+                    <div className="text-sm">No customer selected</div>
+                    <div className="text-xs mt-1">
+                      Select a customer from the list below
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* All Customers List - FROM DATABASE */}
-              <div className="mb-3">
-                <h3
-                  className={`font-semibold mb-2 ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  All Customers
-                </h3>
-                <div className="overflow-y-auto max-h-[200px]">
-                  {/* You need to fetch all customers from your API */}
-                  {/* For now, I'll show search results or a placeholder */}
-                  {searchCustomersData && searchCustomersData.length > 0 ? (
-                    <div className="space-y-2">
-                      {searchCustomersData.map((customer) => (
+              <div className="mb-3 flex-1 overflow-hidden">
+                <div className="flex justify-between items-center mb-2">
+                  <h3
+                    className={`font-semibold text-sm ${
+                      isDarkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    All Customers
+                  </h3>
+                  <span
+                    className={`text-xs ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {allCustomers?.length || 0} total
+                  </span>
+                </div>
+                <div className="overflow-y-auto max-h-[calc(100%-3rem)] pr-1">
+                  {allCustomersLoading ? (
+                    <div className="flex flex-col justify-center items-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+                      <span className="text-sm">Loading customers...</span>
+                    </div>
+                  ) : allCustomers && allCustomers.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {allCustomers.map((customer) => (
                         <div
                           key={customer.id}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          className={`p-2.5 rounded-lg border cursor-pointer transition-all duration-200 ${
                             selectedCustomer?.id === customer.id
                               ? isDarkMode
-                                ? "border-blue-500 bg-blue-900/30"
-                                : "border-blue-500 bg-blue-100"
+                                ? "border-blue-500 bg-blue-900/20 shadow-md"
+                                : "border-blue-400 bg-blue-50 shadow-sm"
                               : isDarkMode
-                              ? "border-gray-700 hover:bg-gray-800"
-                              : "border-gray-200 hover:bg-gray-100"
+                              ? "border-gray-700 hover:bg-gray-800/70 hover:border-gray-600"
+                              : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                           }`}
                           onClick={() => handleSelectCustomer(customer)}
                         >
                           <div className="flex justify-between items-center">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <div
-                                className={`font-medium ${
+                                className={`font-medium text-sm truncate ${
                                   selectedCustomer?.id === customer.id
                                     ? "text-blue-500"
                                     : isDarkMode
@@ -886,16 +1005,47 @@ const POSPanel = () => {
                               >
                                 {customer.name}
                               </div>
-                              <div
-                                className={`text-sm ${
-                                  isDarkMode ? "text-gray-400" : "text-gray-600"
-                                }`}
-                              >
-                                {customer.phone}
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <div
+                                  className={`text-xs ${
+                                    isDarkMode
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {customer.phone}
+                                </div>
+                                {customer.email && (
+                                  <>
+                                    <div
+                                      className={`text-xs ${
+                                        isDarkMode
+                                          ? "text-gray-600"
+                                          : "text-gray-400"
+                                      }`}
+                                    >
+                                      •
+                                    </div>
+                                    <div
+                                      className={`text-xs truncate ${
+                                        isDarkMode
+                                          ? "text-gray-500"
+                                          : "text-gray-500"
+                                      }`}
+                                      title={customer.email}
+                                    >
+                                      {customer.email}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
                             {selectedCustomer?.id === customer.id && (
-                              <Check className="text-green-500" size={16} />
+                              <div className="ml-2 flex-shrink-0">
+                                <div className="bg-green-500 text-white p-1 rounded-full">
+                                  <Check size={12} />
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -903,35 +1053,104 @@ const POSPanel = () => {
                     </div>
                   ) : (
                     <div
-                      className={`text-center py-3 ${
+                      className={`text-center py-6 ${
                         isDarkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      <Search className="mx-auto h-6 w-6 mb-2 opacity-50" />
-                      <p className="text-sm">Search for customers above</p>
+                      <UserPlus className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                      <p className="text-sm font-medium mb-1">
+                        No customers found
+                      </p>
+                      <p className="text-xs">Add customers to get started</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Add New Customer Button */}
-              <button
-                onClick={() =>
-                  showAlert(
-                    "Add new customer functionality coming soon",
-                    "info"
-                  )
-                }
-                className={`w-full py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer ${
-                  isDarkMode
-                    ? "bg-gray-700 hover:bg-gray-600 text-white"
-                    : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-                }`}
-              >
-                <UserPlus size={16} />
-                Add New Customer
-              </button>
+              {/* Fixed Bottom Section */}
+              <div className="mt-auto pt-3 border-t border-gray-700/50">
+                {/* Add New Customer Button */}
+                <button
+                  onClick={() => setShowAddCustomerModal(true)}
+                  className={`w-full py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer mb-3 ${
+                    isDarkMode
+                      ? "bg-gray-700 hover:bg-gray-600 text-white shadow-md"
+                      : "bg-gray-800 hover:bg-gray-900 text-white shadow-sm"
+                  }`}
+                >
+                  <UserPlus size={16} />
+                  Add New Customer
+                </button>
+
+                {/* Date and Time Display - Professional POS Style */}
+                <div className="mt-2 pt-3 border-t border-gray-300 dark:border-gray-700">
+                  <div className="flex items-center justify-between p-2 rounded-lg ">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`p-2 rounded-2xl ${
+                          isDarkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                        }`}
+                      >
+                        <Calendar
+                          size={16}
+                          className={
+                            isDarkMode ? "text-blue-400" : "text-blue-600"
+                          }
+                        />
+                      </div>
+                      <div>
+                        <div
+                          className={`text-xs font-medium ${
+                            isDarkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          DATE
+                        </div>
+                        <div
+                          className={`text-sm font-bold ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {date}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`p-2 rounded-2xl ${
+                          isDarkMode ? "bg-gray-700" : "bg-white shadow-sm"
+                        }`}
+                      >
+                        <Clock
+                          size={16}
+                          className={
+                            isDarkMode ? "text-green-400" : "text-green-600"
+                          }
+                        />
+                      </div>
+                      <div>
+                        <div
+                          className={`text-xs font-medium ${
+                            isDarkMode ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          TIME
+                        </div>
+                        <div
+                          className={`text-sm font-bold font-mono tracking-wider ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {time}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
             {/* ACTION BUTTONS */}
             <div
               className={`rounded-2xl border p-2 backdrop-blur ${
@@ -1008,9 +1227,7 @@ const POSPanel = () => {
                     Processing...
                   </>
                 ) : (
-                  <>
-                    Confirm Sell
-                  </>
+                  <>Confirm Sell</>
                 )}
               </button>
 
@@ -1198,6 +1415,161 @@ const POSPanel = () => {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ADD CUSTOMER MODAL */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 flex backdrop-blur-sm items-center justify-center z-[10000]">
+          <div
+            className={`p-6 rounded-xl border w-96 transform transition-all duration-300 scale-100 ${
+              isDarkMode
+                ? "bg-gray-900 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <h3
+              className={`text-lg font-bold mb-4 ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              Add New Customer
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label
+                  className={`block mb-2 font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={newCustomer.name}
+                  onChange={(e) =>
+                    setNewCustomer({ ...newCustomer, name: e.target.value })
+                  }
+                  className={`w-full p-3 border rounded-lg ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter customer name"
+                />
+              </div>
+              <div>
+                <label
+                  className={`block mb-2 font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Phone *
+                </label>
+                <input
+                  type="tel"
+                  value={newCustomer.phone}
+                  onChange={(e) =>
+                    setNewCustomer({ ...newCustomer, phone: e.target.value })
+                  }
+                  className={`w-full p-3 border rounded-lg ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <label
+                  className={`block mb-2 font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={(e) =>
+                    setNewCustomer({ ...newCustomer, email: e.target.value })
+                  }
+                  className={`w-full p-3 border rounded-lg ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label
+                  className={`block mb-2 font-medium ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Address
+                </label>
+                <textarea
+                  value={newCustomer.address}
+                  onChange={(e) =>
+                    setNewCustomer({ ...newCustomer, address: e.target.value })
+                  }
+                  className={`w-full p-3 border rounded-lg ${
+                    isDarkMode
+                      ? "bg-gray-800 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter address"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddNewCustomer}
+                  disabled={
+                    creatingCustomer ||
+                    !newCustomer.name.trim() ||
+                    !newCustomer.phone.trim()
+                  }
+                  className={`flex-1 py-3 rounded-lg font-medium transition-colors cursor-pointer ${
+                    creatingCustomer ||
+                    !newCustomer.name.trim() ||
+                    !newCustomer.phone.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-500 hover:bg-green-600 text-white"
+                  }`}
+                >
+                  {creatingCustomer ? (
+                    <>
+                      <Loader2 className="inline h-4 w-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    "Add Customer"
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddCustomerModal(false);
+                    setNewCustomer({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      address: "",
+                    });
+                  }}
+                  className={`flex-1 py-3 rounded-lg font-medium transition-colors cursor-pointer ${
+                    isDarkMode
+                      ? "bg-gray-700 hover:bg-gray-600 text-white"
+                      : "bg-gray-300 hover:bg-gray-400 text-gray-800"
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
