@@ -3,10 +3,12 @@
 import { useGetDashboardMetricsQuery } from "@/state/api";
 import { ListChecks, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import React from "react";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 const CardServiceSummary = () => {
   const { data: dashboardMetrics, isLoading } = useGetDashboardMetricsQuery();
   const serviceData = dashboardMetrics?.serviceSummary || [];
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -43,7 +45,7 @@ const CardServiceSummary = () => {
   }
 
   return (
-    <div className="shadow-2xl rounded-2xl border">
+    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border" : ""}`}>
       <div className="px-7 pt-5 pb-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Recent Services</h3>

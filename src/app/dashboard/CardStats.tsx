@@ -95,7 +95,7 @@ const CardStats = () => {
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="shadow-lg rounded-2xl border p-6 transition-all duration-300 hover:shadow-xl"
+          className={`shadow-lg rounded-2xl p-6 transition-all duration-300 hover:shadow-xl ${stat.bgColor}`}
         >
           <div className="flex items-center justify-between mb-4">
             <div className={`p-2 rounded-lg ${stat.bgColor}`}>
@@ -120,7 +120,7 @@ const CardStats = () => {
               </span>
             </div>
           </div>
-          <h3 className="text-2xl font-bold mb-1">
+          <h3 className="text-2xl font-bold mb-1 text-black">
             {numeral(stat.value).format("0,0.00")} ৳
           </h3>
           <p className="text-sm text-gray-600">

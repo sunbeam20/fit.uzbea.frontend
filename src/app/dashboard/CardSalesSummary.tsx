@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import numeral from "numeral";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 // Format date helper function
 const formatDate = (dateString: string) => {
@@ -27,6 +28,7 @@ const formatDate = (dateString: string) => {
 const CardSalesSummary = () => {
   const { data, isLoading, isError } = useGetDashboardMetricsQuery();
   const [timeframe, setTimeframe] = useState("weekly");
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   // Process sale data for chart
   const chartData = React.useMemo(() => {
@@ -51,7 +53,7 @@ const CardSalesSummary = () => {
   }
 
   return (
-    <div className="shadow-2xl rounded-2xl border p-6">
+    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border" : ""}`}>
       {isLoading ? (
         <div className="text-center">Loading sales data...</div>
       ) : (
@@ -61,7 +63,7 @@ const CardSalesSummary = () => {
               <h2 className="text-lg font-semibold">Sales Summary</h2>
               <p className="text-sm text-gray-500">Revenue Overview</p>
             </div>
-            <div className="flex gap-2">
+            {/* <div className="flex gap-2">
               {['daily', 'weekly', 'monthly'].map((item) => (
                 <button
                   key={item}
@@ -75,13 +77,13 @@ const CardSalesSummary = () => {
                   {item.charAt(0).toUpperCase() + item.slice(1)}
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
 
           <div className="flex justify-between items-center mb-8">
             <div>
               <p className="text-xs text-gray-400">Total Revenue</p>
-              <span className="text-3xl font-bold">
+              <span className="text-3xl sm:text-xl font-bold">
                 {numeral(totalValueSum).format("0,0.00")} ৳
               </span>
             </div>

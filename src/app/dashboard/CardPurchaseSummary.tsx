@@ -13,9 +13,11 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 const CardPurchaseSummary = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
+    const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   // Process purchase data for chart
   const chartData = React.useMemo(() => {
@@ -37,7 +39,7 @@ const CardPurchaseSummary = () => {
   );
 
   return (
-    <div className="shadow-2xl rounded-2xl border p-6">
+    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border" : ""}`}>
       {isLoading ? (
         <div>Loading...</div>
       ) : (
@@ -50,7 +52,7 @@ const CardPurchaseSummary = () => {
           <div className="mb-8">
             <p className="text-xs text-gray-500">Total Purchased</p>
             <div className="flex items-center">
-              <p className="text-2xl font-bold">
+              <p className="text-3xl sm:text-xl font-bold">
                 {numeral(totalPurchases).format("0,0.00")} ৳
               </p>
             </div>

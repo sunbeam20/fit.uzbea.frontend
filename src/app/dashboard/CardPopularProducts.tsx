@@ -4,9 +4,11 @@ import { useGetDashboardMetricsQuery } from "@/state/api";
 import { ShoppingBag } from "lucide-react";
 import React from "react";
 import Rating from "../(components)/Rating";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
 
 const CardPopularProducts = () => {
   const { data: dashboardMetrics, isLoading } = useGetDashboardMetricsQuery();
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   
   // SAFE: Create a copy of the array before sorting
   const popularProducts = React.useMemo(() => {
@@ -18,7 +20,7 @@ const CardPopularProducts = () => {
   }, [dashboardMetrics?.popularProducts]);
 
   return (
-    <div className="shadow-2xl rounded-2xl border">
+    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border" : ""}`}>
       {isLoading ? (
         <div className="m-5">Loading...</div>
       ) : (

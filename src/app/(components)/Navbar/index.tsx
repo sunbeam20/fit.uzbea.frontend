@@ -138,7 +138,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 flex items-center justify-between w-full h-12 px-2 shadow-sm z-50 border-b ${
+      className={`fixed top-0 left-0 right-0 flex items-center justify-between w-full h-12 px-2 shadow-sm z-51 border-b ${
         isDarkMode ? "bg-black border-gray-700" : "bg-white border-gray-200"
       }`}
     >
@@ -188,21 +188,6 @@ const Navbar = () => {
         </div> */}
       </div>
 
-      {/* CENTER SECTION - Mobile Search */}
-      <div className="absolute left-1/2 transform -translate-x-1/2 md:hidden">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="search"
-            placeholder="Search..."
-            className={`w-48 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              isDarkMode
-                ? "bg-gray-800 border-gray-600 text-white"
-                : "bg-gray-50 border-gray-300"
-            }`}
-          />
-        </div>
-      </div>
 
       {/* RIGHT SECTION - Actions & User */}
       <div className="flex items-center gap-3">
@@ -288,7 +273,7 @@ const Navbar = () => {
 
             {/* Profile Modal */}
             {isProfileModalOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg border z-50 animate-in fade-in-0 zoom-in-95">
+              <div className="absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg border z-100 animate-in fade-in-0 zoom-in-95">
                 <div
                   className={`
                   rounded-lg p-2 space-y-1
