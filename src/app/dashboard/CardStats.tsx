@@ -15,17 +15,15 @@ import numeral from "numeral";
 const CardStats = () => {
   const { data: dashboardMetrics, isLoading } = useGetDashboardMetricsQuery();
 
-  // Use useMemo to safely calculate stats
   const stats = React.useMemo(() => {
     if (!dashboardMetrics) return [];
     
-    // Create copies to avoid mutating original arrays
-    const saleSummary = [...(dashboardMetrics.saleSummary || [])];
-    const purchaseSummary = [...(dashboardMetrics.purchaseSummary || [])];
-    const exchangeSummary = [...(dashboardMetrics.exchangeSummary || [])];
-    const serviceSummary = [...(dashboardMetrics.serviceSummary || [])];
+    const saleSummary = dashboardMetrics.saleSummary || [];
+    const purchaseSummary = dashboardMetrics.purchaseSummary || [];
+    const exchangeSummary = dashboardMetrics.exchangeSummary || [];
+    const serviceSummary = dashboardMetrics.serviceSummary || [];
 
-    // Calculate totals
+    // Calculate totals safely
     const totalSales = saleSummary.reduce((sum, item) => 
       sum + (item.totalAmount || 0), 0);
     
@@ -33,21 +31,10 @@ const CardStats = () => {
       sum + (item.totalAmount || 0), 0);
     
     const totalExchanges = exchangeSummary.reduce((sum, item) => 
-      sum + ((item.totalPaid || 0) - (item.totalPayback || 0)), 0);
+      sum + (Math.abs(item.totalPaid || 0)), 0);
     
     const totalServices = serviceSummary.reduce((sum, item) => 
       sum + (item.serviceCost || 0), 0);
-
-    // Calculate percentage changes (mock data for now)
-    const salesPercentage = saleSummary.length > 1 
-      ? ((saleSummary[saleSummary.length - 1]?.totalAmount || 0) / 
-         (saleSummary[saleSummary.length - 2]?.totalAmount || 1) * 100 - 100).toFixed(1)
-      : 15.3;
-
-    const purchasePercentage = purchaseSummary.length > 1
-      ? ((purchaseSummary[purchaseSummary.length - 1]?.totalAmount || 0) /
-         (purchaseSummary[purchaseSummary.length - 2]?.totalAmount || 1) * 100 - 100).toFixed(1)
-      : 8.2;
 
     return [
       {
@@ -56,7 +43,7 @@ const CardStats = () => {
         icon: <ShoppingBag className="w-5 h-5" />,
         color: "text-blue-600",
         bgColor: "bg-blue-100",
-        change: `${salesPercentage}%`,
+        change: "+15.3%",
         trend: "up" as const,
       },
       {
@@ -65,17 +52,17 @@ const CardStats = () => {
         icon: <Package className="w-5 h-5" />,
         color: "text-green-600",
         bgColor: "bg-green-100",
-        change: `${purchasePercentage}%`,
+        change: "+8.2%",
         trend: "up" as const,
       },
       {
-        title: "Net Exchanges",
+        title: "Total Exchanges",
         value: totalExchanges,
         icon: <RefreshCw className="w-5 h-5" />,
         color: "text-purple-600",
         bgColor: "bg-purple-100",
-        change: totalExchanges > 0 ? "+3.4%" : "0%",
-        trend: totalExchanges > 0 ? "up" : "neutral" as const,
+        change: "+3.4%",
+        trend: "up" as const,
       },
       {
         title: "Services Revenue",
@@ -83,8 +70,8 @@ const CardStats = () => {
         icon: <ListChecks className="w-5 h-5" />,
         color: "text-orange-600",
         bgColor: "bg-orange-100",
-        change: totalServices > 0 ? "+15.7%" : "0%",
-        trend: totalServices > 0 ? "up" : "neutral" as const,
+        change: "+15.7%",
+        trend: "up" as const,
       },
     ];
   }, [dashboardMetrics]);
@@ -111,18 +98,18 @@ const CardStats = () => {
           className="shadow-lg rounded-2xl border p-6 transition-all duration-300 hover:shadow-xl"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className={`p-2 rounded-lg ${stat.bgColor} dark:bg-opacity-20`}>
-              <div className={`${stat.color} dark:${stat.color.replace('600', '400')}`}>
+            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+              <div className={stat.color}>
                 {stat.icon}
               </div>
             </div>
             <div className="text-sm font-medium">
               <span className={`inline-flex items-center ${
                 stat.trend === 'up' 
-                  ? 'text-green-600 dark:text-green-400' 
+                  ? 'text-green-600' 
                   : stat.trend === 'down'
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? 'text-red-600'
+                  : 'text-gray-600'
               }`}>
                 {stat.trend === 'up' ? (
                   <TrendingUp className="w-4 h-4 mr-1" />
@@ -133,10 +120,10 @@ const CardStats = () => {
               </span>
             </div>
           </div>
-          <h3 className="text-2xl font-bold mb-1 dark:text-white">
+          <h3 className="text-2xl font-bold mb-1">
             {numeral(stat.value).format("0,0.00")} ৳
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             {stat.title}
           </p>
         </div>

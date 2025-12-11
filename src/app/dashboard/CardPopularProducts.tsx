@@ -63,7 +63,7 @@ const CardPopularProducts = () => {
                       </div>
                       <div className="text-xs flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-full">
                         <ShoppingBag className="w-3 h-3 mr-1" />
-                        {product.quantity || 0} Sold
+                        {product.quantity || 0 } Sold
                       </div>
                     </div>
                   </div>

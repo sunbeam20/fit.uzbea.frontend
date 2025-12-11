@@ -1,3 +1,5 @@
+"use client";
+
 import { useGetDashboardMetricsQuery } from "@/state/api";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import numeral from "numeral";
@@ -9,81 +11,95 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  CartesianGrid,
 } from "recharts";
 
 const CardPurchaseSummary = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
-  const purchaseData = data?.purchaseSummary || [];
 
-  const lastDataPoint = purchaseData[purchaseData.length - 1] || null;
+  // Process purchase data for chart
+  const chartData = React.useMemo(() => {
+    if (!data?.purchaseSummary) return [];
+
+    return data.purchaseSummary.map((item, index) => ({
+      ...item,
+      formattedDate: new Date(
+        item.dueDate || item.created_at || new Date().toISOString()
+      ).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      name: `Purchase ${index + 1}`,
+    }));
+  }, [data?.purchaseSummary]);
+
+  const lastDataPoint = chartData[chartData.length - 1] || null;
+  const totalPurchases = chartData.reduce(
+    (acc, curr) => acc + (curr.totalAmount || 0),
+    0
+  );
 
   return (
-    <div className="flex flex-col justify-between row-span-2 xl:row-span-3 col-span-1 md:col-span-2 xl:col-span-1 shadow-2xl rounded-2xl border">
+    <div className="shadow-2xl rounded-2xl border p-6">
       {isLoading ? (
-        <div className="m-5">Loading...</div>
+        <div>Loading...</div>
       ) : (
         <>
-          <h3 className="text-lg font-semibold px-7 pt-5 pb-2">
-            Purchase Summary
-          </h3>
-
           <div>
-            <div className="mb-4 mt-7 px-7">
-              <p className="text-xs">Purchased</p>
-              <div className="flex items-center">
-                <p className="text-2xl font-bold">
-                  {lastDataPoint
-                    ? numeral(lastDataPoint.totalAmount).format("0.00a")
-                    : "0"}{" "}
-                  &#2547;
-                </p>
-                {lastDataPoint && (
-                  <p
-                    className={`text-sm ${
-                      lastDataPoint.totalAmount! >= 0
-                        ? "text-green-500"
-                        : "text-red-500"
-                    } flex ml-3`}
-                  >
-                    {lastDataPoint.totalAmount! >= 0 ? (
-                      <TrendingUp className="w-5 h-5 mr-1" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 mr-1" />
-                    )}
-                    {Math.abs(
-                      lastDataPoint.totalAmount / lastDataPoint.totalPaid
-                    )}
-                    %
-                  </p>
-                )}
-              </div>
+            <h3 className="text-lg font-semibold ">Purchase Summary</h3>
+            <p className="text-sm text-gray-500 mb-6">Purchase Overview</p>
+          </div>
+
+          <div className="mb-8">
+            <p className="text-xs text-gray-500">Total Purchased</p>
+            <div className="flex items-center">
+              <p className="text-2xl font-bold">
+                {numeral(totalPurchases).format("0,0.00")} ৳
+              </p>
             </div>
-            <ResponsiveContainer width="100%" height={350} className="px-7">
+          </div>
+          {lastDataPoint && lastDataPoint.totalAmount > 0 && (
+            <p className={`text-sm text-green-500 flex mb-6`}>
+              <TrendingUp className="w-5 h-5 mr-1" />
+              {(
+                (lastDataPoint.totalAmount /
+                  (totalPurchases / chartData.length)) *
+                100
+              ).toFixed(1)}
+              %
+            </p>
+          )}
+
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={purchaseData}
-                margin={{ top: 0, right: 0, left: -50, bottom: 45 }}
+                data={chartData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
               >
-                <XAxis dataKey="date" tick={false} axisLine={false} />
-                <YAxis tickLine={false} tick={false} axisLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="formattedDate"
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => numeral(value).format("0a")}
+                />
                 <Tooltip
                   formatter={(value: number) => [
-                    `$${value.toLocaleString("en")}`,
+                    `${numeral(value).format("0,0.00")} ৳`,
+                    "Amount",
                   ]}
-                  labelFormatter={(label) => {
-                    const date = new Date(label);
-                    return date.toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    });
-                  }}
+                  labelFormatter={(label) => `Date: ${label}`}
                 />
                 <Area
-                  type="linear"
+                  type="monotone"
                   dataKey="totalAmount"
                   stroke="#8884d8"
                   fill="#8884d8"
-                  dot={true}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
                 />
               </AreaChart>
             </ResponsiveContainer>
