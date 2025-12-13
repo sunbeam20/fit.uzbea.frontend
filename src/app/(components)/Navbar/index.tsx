@@ -188,7 +188,6 @@ const Navbar = () => {
         </div> */}
       </div>
 
-
       {/* RIGHT SECTION - Actions & User */}
       <div className="flex items-center gap-3">
         {/* Desktop Actions */}
@@ -273,19 +272,16 @@ const Navbar = () => {
 
             {/* Profile Modal */}
             {isProfileModalOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg border z-100 animate-in fade-in-0 zoom-in-95">
-                <div
-                  className={`
-                  rounded-lg p-2 space-y-1
-                  ${
-                    isDarkMode
-                      ? "bg-gray-800 border-gray-700 text-white"
-                      : "bg-white border-gray-200 text-gray-900"
-                  }
-                `}
-                >
+              <div
+                className={`absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg z-100 border ${
+                  isDarkMode
+                    ? "bg-gray-950/90 border-gray-700"
+                    : "bg-white/90 border-gray-200"
+                }`}
+              >
+                <div className="rounded-lg p-2 space-y-1">
                   {/* User Info */}
-                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div className="px-3 py-2 border-b border-gray-700 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                         {getUserInitials()}

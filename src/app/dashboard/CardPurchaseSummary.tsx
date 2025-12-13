@@ -39,7 +39,7 @@ const CardPurchaseSummary = () => {
   );
 
   return (
-    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border" : ""}`}>
+    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border bg-gray-800/50 border-gray-700" : "border bg-white/50 border-gray-200"}`}>
       {isLoading ? (
         <div>Loading...</div>
       ) : (
@@ -52,7 +52,7 @@ const CardPurchaseSummary = () => {
           <div className="mb-8">
             <p className="text-xs text-gray-500">Total Purchased</p>
             <div className="flex items-center">
-              <p className="text-3xl sm:text-xl font-bold">
+              <p className="md:text-xl font-bold">
                 {numeral(totalPurchases).format("0,0.00")} ৳
               </p>
             </div>

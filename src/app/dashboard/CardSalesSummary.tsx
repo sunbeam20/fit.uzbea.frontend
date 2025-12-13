@@ -53,7 +53,7 @@ const CardSalesSummary = () => {
   }
 
   return (
-    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border" : ""}`}>
+    <div className={`shadow-2xl rounded-2xl p-6 ${isDarkMode ? "border bg-gray-800/50 border-gray-700" : "border bg-white/50 border-gray-200"}`}>
       {isLoading ? (
         <div className="text-center">Loading sales data...</div>
       ) : (
@@ -83,16 +83,16 @@ const CardSalesSummary = () => {
           <div className="flex justify-between items-center mb-8">
             <div>
               <p className="text-xs text-gray-400">Total Revenue</p>
-              <span className="text-3xl sm:text-xl font-bold">
+              <span className="md:text-xl font-bold">
                 {numeral(totalValueSum).format("0,0.00")} ৳
               </span>
             </div>
-            <div className="text-right">
+            {/* <div className="text-right">
               <p className="text-xs text-gray-400">Avg. Sale</p>
-              <span className="text-lg font-semibold">
+              <span className="md:text-xl font-semibold">
                 {numeral(avgSale).format("0,0.00")} ৳
               </span>
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-center mb-6">

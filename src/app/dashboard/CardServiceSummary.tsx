@@ -45,7 +45,7 @@ const CardServiceSummary = () => {
   }
 
   return (
-    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border" : ""}`}>
+    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border bg-gray-800/50 border-gray-700" : "border bg-white/50 border-gray-200"}`}>
       <div className="px-7 pt-5 pb-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Recent Services</h3>

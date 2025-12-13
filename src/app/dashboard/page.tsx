@@ -18,12 +18,12 @@ const Dashboard = () => {
     <>
       {showPanel ? (
         <div
-          className={`fixed inset-0 flex items-center justify-center -ml-8 ${
+          className={`fixed inset-0 flex items-center justify-center ${
             isDarkMode ? "bg-black" : "invert"
           }`}
         >
           {/* Container with circular border */}
-          <div className="relative w-240 h-240 md:w-240 md:h-240 rounded-full overflow-hidden border-8 border-white shadow-2xl">
+          <div className="relative size-dvw rounded-full overflow-hidden border-8 border-white shadow-2xl">
             <Image
               src={logo}
               alt="Floppy IT"
@@ -43,10 +43,10 @@ const Dashboard = () => {
           <div className="col-span-4 row-span-1">
             <CardPopularProducts />
           </div>
-          <div className="col-span-2 row-span-1">
+          <div className="col-span-4 md:col-span-2 row-span-1">
             <CardSalesSummary />
           </div>
-          <div className="col-span-2 row-span-1">
+          <div className="col-span-4 md:col-span-2 row-span-1">
             <CardPurchaseSummary />
           </div>
           <div className="col-span-4 row-span-1">

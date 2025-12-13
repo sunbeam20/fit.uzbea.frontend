@@ -124,11 +124,13 @@ const POSPanel = () => {
     phone: "",
     address: "",
   });
-  
+
   // Responsive states
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [activeTab, setActiveTab] = useState<"products" | "customers" | "cart">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "customers" | "cart">(
+    "products"
+  );
 
   // Check screen size on mount and resize
   useEffect(() => {
@@ -139,8 +141,8 @@ const POSPanel = () => {
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
   // Update current date and time every second
@@ -297,7 +299,7 @@ const POSPanel = () => {
     if (isMobile) {
       setActiveTab("cart");
     }
-    
+
     // Hide search results after adding
     setShowProductResults(false);
   };
@@ -370,7 +372,7 @@ const POSPanel = () => {
     setSelectedCustomer(customer);
     setShowCustomerResults(false);
     showAlert(`Customer selected: ${customer.name}`, "success");
-    
+
     // Switch to cart tab on mobile after selecting customer
     if (isMobile) {
       setActiveTab("cart");
@@ -487,40 +489,54 @@ const POSPanel = () => {
 
   // Mobile Bottom Navigation
   const MobileBottomNav = () => (
-    <div className={`fixed bottom-0 left-0 right-0 z-40 border-t ${
-      isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
-    }`}>
+    <div
+      className={`fixed bottom-0 left-0 right-0 z-40 border-t ${
+        isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+      }`}
+    >
       <div className="flex justify-around items-center h-16">
         <button
           onClick={() => setActiveTab("products")}
           className={`flex flex-col items-center justify-center flex-1 py-2 ${
             activeTab === "products"
-              ? isDarkMode ? "text-blue-400" : "text-blue-600"
-              : isDarkMode ? "text-gray-400" : "text-gray-500"
+              ? isDarkMode
+                ? "text-blue-400"
+                : "text-blue-600"
+              : isDarkMode
+              ? "text-gray-400"
+              : "text-gray-500"
           }`}
         >
           <Search size={20} />
           <span className="text-xs mt-1">Products</span>
         </button>
-        
+
         <button
           onClick={() => setActiveTab("customers")}
           className={`flex flex-col items-center justify-center flex-1 py-2 ${
             activeTab === "customers"
-              ? isDarkMode ? "text-blue-400" : "text-blue-600"
-              : isDarkMode ? "text-gray-400" : "text-gray-500"
+              ? isDarkMode
+                ? "text-blue-400"
+                : "text-blue-600"
+              : isDarkMode
+              ? "text-gray-400"
+              : "text-gray-500"
           }`}
         >
           <UserPlus size={20} />
           <span className="text-xs mt-1">Customers</span>
         </button>
-        
+
         <button
           onClick={() => setActiveTab("cart")}
           className={`flex flex-col items-center justify-center flex-1 py-2 relative ${
             activeTab === "cart"
-              ? isDarkMode ? "text-blue-400" : "text-blue-600"
-              : isDarkMode ? "text-gray-400" : "text-gray-500"
+              ? isDarkMode
+                ? "text-blue-400"
+                : "text-blue-600"
+              : isDarkMode
+              ? "text-gray-400"
+              : "text-gray-500"
           }`}
         >
           <div className="relative">
@@ -539,26 +555,34 @@ const POSPanel = () => {
 
   // Mobile Header
   const MobileHeader = () => (
-    <div className={`sticky top-0 z-30 p-4 border-b ${
-      isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
-    }`}>
+    <div
+      className={`sticky top-0 z-30 p-4 border-b ${
+        isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div>
-          <h2 className={`text-xl font-bold ${
-            isDarkMode ? "text-white" : "text-gray-900"
-          }`}>
+          <h2
+            className={`text-xl font-bold ${
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
             POS System
           </h2>
-          <p className={`text-sm ${
-            isDarkMode ? "text-gray-400" : "text-gray-500"
-          }`}>
+          <p
+            className={`text-sm ${
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             {date} {time}
           </p>
         </div>
         <button
           onClick={() => dispatch(setIsPOSPanelOpen(false))}
           className={`p-2 rounded-lg ${
-            isDarkMode ? "bg-gray-800 hover:bg-gray-700" : "bg-gray-200 hover:bg-gray-300"
+            isDarkMode
+              ? "bg-gray-800 hover:bg-gray-700"
+              : "bg-gray-200 hover:bg-gray-300"
           }`}
         >
           <X size={24} />
@@ -578,16 +602,20 @@ const POSPanel = () => {
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className={`text-lg font-bold mb-4 ${
-          isDarkMode ? "text-white" : "text-gray-900"
-        }`}>
+        <h3
+          className={`text-lg font-bold mb-4 ${
+            isDarkMode ? "text-white" : "text-gray-900"
+          }`}
+        >
           Apply Discount
         </h3>
         <div className="space-y-4">
           <div>
-            <label className={`block mb-2 font-medium ${
-              isDarkMode ? "text-gray-300" : "text-gray-700"
-            }`}>
+            <label
+              className={`block mb-2 font-medium ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Discount Type
             </label>
             <div className="flex gap-4">
@@ -618,9 +646,11 @@ const POSPanel = () => {
             </div>
           </div>
           <div>
-            <label className={`block mb-2 font-medium ${
-              isDarkMode ? "text-gray-300" : "text-gray-700"
-            }`}>
+            <label
+              className={`block mb-2 font-medium ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Discount Value
             </label>
             <input
@@ -681,7 +711,7 @@ const POSPanel = () => {
       >
         {/* Mobile Header */}
         {isMobile && <MobileHeader />}
-        
+
         {/* Mobile View */}
         {isMobile ? (
           <div className="flex-1 overflow-hidden pb-16">
@@ -722,7 +752,7 @@ const POSPanel = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Product List */}
                   <div className="grid grid-cols-2 gap-2">
                     {posProducts?.slice(0, 8).map((product) => {
@@ -740,18 +770,22 @@ const POSPanel = () => {
                           <div className="font-medium text-sm truncate">
                             {product.name}
                           </div>
-                          <div className={`text-xs mt-1 ${
-                            isDarkMode ? "text-gray-400" : "text-gray-500"
-                          }`}>
+                          <div
+                            className={`text-xs mt-1 ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
                             {product.specification?.substring(0, 30)}...
                           </div>
                           <div className="flex justify-between items-center mt-1">
                             <span className="text-green-600 font-bold text-sm">
                               {retailPrice.toFixed(2)} ৳
                             </span>
-                            <span className={`text-xs ${
-                              isDarkMode ? "text-gray-400" : "text-gray-500"
-                            }`}>
+                            <span
+                              className={`text-xs ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
                               Stock: {product.quantity}
                             </span>
                           </div>
@@ -806,7 +840,9 @@ const POSPanel = () => {
                     <div className="mb-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-bold text-sm">{selectedCustomer.name}</div>
+                          <div className="font-bold text-sm">
+                            {selectedCustomer.name}
+                          </div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">
                             {selectedCustomer.phone}
                           </div>
@@ -848,7 +884,9 @@ const POSPanel = () => {
                             : "border-gray-200 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="font-medium text-sm">{customer.name}</div>
+                        <div className="font-medium text-sm">
+                          {customer.name}
+                        </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400">
                           {customer.phone}
                         </div>
@@ -892,16 +930,26 @@ const POSPanel = () => {
                           >
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">{item.product.name}</div>
+                                <div className="font-medium text-sm">
+                                  {item.product.name}
+                                </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {item.discountedPrice.toFixed(2)} × {item.quantity} ৳
+                                  {item.discountedPrice.toFixed(2)} ×{" "}
+                                  {item.quantity} ৳
                                 </div>
                               </div>
                               <div className="text-right">
-                                <div className="font-bold text-sm">{total.toFixed(2)} ৳</div>
+                                <div className="font-bold text-sm">
+                                  {total.toFixed(2)} ৳
+                                </div>
                                 {item.discount && (
                                   <div className="text-xs text-red-500">
-                                    Save: {(item.price * item.quantity - total).toFixed(2)} ৳
+                                    Save:{" "}
+                                    {(
+                                      item.price * item.quantity -
+                                      total
+                                    ).toFixed(2)}{" "}
+                                    ৳
                                   </div>
                                 )}
                               </div>
@@ -921,7 +969,9 @@ const POSPanel = () => {
                                 >
                                   <Minus size={12} />
                                 </button>
-                                <span className="w-8 text-center text-sm">{item.quantity}</span>
+                                <span className="w-8 text-center text-sm">
+                                  {item.quantity}
+                                </span>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -967,21 +1017,33 @@ const POSPanel = () => {
 
                 {/* Order Summary & Actions */}
                 {cart.length > 0 && (
-                  <div className={`p-3 border-t ${
-                    isDarkMode ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"
-                  }`}>
+                  <div
+                    className={`p-3 border-t ${
+                      isDarkMode
+                        ? "border-gray-700 bg-gray-900"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
                     <div className="space-y-2 mb-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Subtotal:
+                        </span>
                         <span>{orderSummary.subtotal.toFixed(2)} ৳</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Discount:</span>
-                        <span className="text-red-500">-{orderSummary.discount.toFixed(2)} ৳</span>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Discount:
+                        </span>
+                        <span className="text-red-500">
+                          -{orderSummary.discount.toFixed(2)} ৳
+                        </span>
                       </div>
                       <div className="flex justify-between text-lg font-bold pt-2 border-t dark:border-gray-700">
                         <span>Total:</span>
-                        <span className="text-green-600">{orderSummary.total.toFixed(2)} ৳</span>
+                        <span className="text-green-600">
+                          {orderSummary.total.toFixed(2)} ৳
+                        </span>
                       </div>
                     </div>
 
@@ -1074,26 +1136,32 @@ const POSPanel = () => {
                 }`}
               >
                 <div className="flex justify-between items-center mb-2">
-                  <h2 className={`text-sm font-bold ${
-                    isDarkMode ? "text-white" : "text-gray-900"
-                  }`}>
+                  <h2
+                    className={`text-sm font-bold ${
+                      isDarkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
                     Product Details
                   </h2>
                   {cart.length > 0 && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      isDarkMode 
-                        ? "bg-gray-700 text-gray-300" 
-                        : "bg-gray-200 text-gray-700"
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full ${
+                        isDarkMode
+                          ? "bg-gray-700 text-gray-300"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
                       {cart.length} item{cart.length !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
 
                 {cart.length === 0 ? (
-                  <div className={`text-center py-8 ${
-                    isDarkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  <div
+                    className={`text-center py-8 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     <Search className="mx-auto h-8 w-8 mb-2 opacity-50" />
                     <p className="text-sm">No products added</p>
                   </div>
@@ -1101,11 +1169,13 @@ const POSPanel = () => {
                   <div className="overflow-y-auto h-[calc(100%-2rem)]">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className={`border-b ${
-                          isDarkMode
-                            ? "border-gray-700 text-gray-300"
-                            : "border-gray-200 text-gray-700"
-                        }`}>
+                        <tr
+                          className={`border-b ${
+                            isDarkMode
+                              ? "border-gray-700 text-gray-300"
+                              : "border-gray-200 text-gray-700"
+                          }`}
+                        >
                           <th className="py-1 px-1 text-left">Product</th>
                           <th className="py-1 px-1">Qty</th>
                           <th className="py-1 px-1">Price</th>
@@ -1116,7 +1186,9 @@ const POSPanel = () => {
                       <tbody>
                         {cart.map((item) => {
                           const price = convertToNumber(item.price);
-                          const discountedPrice = convertToNumber(item.discountedPrice);
+                          const discountedPrice = convertToNumber(
+                            item.discountedPrice
+                          );
                           const total = discountedPrice * item.quantity;
 
                           return (
@@ -1130,9 +1202,13 @@ const POSPanel = () => {
                             >
                               <td className="py-1 px-1 text-left">
                                 <div className="max-w-[80px]">
-                                  <div className={`font-medium truncate ${
-                                    isDarkMode ? "text-white" : "text-gray-900"
-                                  }`}>
+                                  <div
+                                    className={`font-medium truncate ${
+                                      isDarkMode
+                                        ? "text-white"
+                                        : "text-gray-900"
+                                    }`}
+                                  >
                                     {item.product.name}
                                   </div>
                                 </div>
@@ -1140,7 +1216,9 @@ const POSPanel = () => {
                               <td className="py-1 px-1">
                                 <div className="flex items-center justify-center">
                                   <button
-                                    onClick={() => handleUpdateQuantity(item.product.id, -1)}
+                                    onClick={() =>
+                                      handleUpdateQuantity(item.product.id, -1)
+                                    }
                                     className={`w-5 h-5 flex items-center justify-center border rounded ${
                                       isDarkMode
                                         ? "border-gray-600 hover:bg-gray-700"
@@ -1150,13 +1228,19 @@ const POSPanel = () => {
                                   >
                                     <Minus size={10} />
                                   </button>
-                                  <span className={`w-6 text-center ${
-                                    isDarkMode ? "text-white" : "text-gray-900"
-                                  }`}>
+                                  <span
+                                    className={`w-6 text-center ${
+                                      isDarkMode
+                                        ? "text-white"
+                                        : "text-gray-900"
+                                    }`}
+                                  >
                                     {item.quantity}
                                   </span>
                                   <button
-                                    onClick={() => handleUpdateQuantity(item.product.id, 1)}
+                                    onClick={() =>
+                                      handleUpdateQuantity(item.product.id, 1)
+                                    }
                                     className={`w-5 h-5 flex items-center justify-center border rounded ${
                                       isDarkMode
                                         ? "border-gray-600 hover:bg-gray-700"
@@ -1168,14 +1252,20 @@ const POSPanel = () => {
                                 </div>
                               </td>
                               <td className="py-1 px-1">
-                                <div className={`${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                <div
+                                  className={`${
+                                    isDarkMode ? "text-white" : "text-gray-900"
+                                  }`}
+                                >
                                   {discountedPrice.toFixed(2)} ৳
                                 </div>
                               </td>
                               <td className="py-1 px-1">
-                                <div className={`font-semibold ${
-                                  isDarkMode ? "text-white" : "text-gray-900"
-                                }`}>
+                                <div
+                                  className={`font-semibold ${
+                                    isDarkMode ? "text-white" : "text-gray-900"
+                                  }`}
+                                >
                                   {total.toFixed(2)} ৳
                                 </div>
                               </td>
@@ -1191,7 +1281,9 @@ const POSPanel = () => {
                                     Disc
                                   </button>
                                   <button
-                                    onClick={() => handleRemoveProduct(item.product.id)}
+                                    onClick={() =>
+                                      handleRemoveProduct(item.product.id)
+                                    }
                                     className="text-red-500 hover:text-red-700"
                                   >
                                     <Trash2 size={12} />
@@ -1215,42 +1307,54 @@ const POSPanel = () => {
                     : "bg-white/50 border-gray-200"
                 }`}
               >
-                <h2 className={`text-sm font-bold mb-2 ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}>
+                <h2
+                  className={`text-sm font-bold mb-2 ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   Order Summary
                 </h2>
 
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className={`text-xs ${
-                      isDarkMode ? "text-gray-300" : "text-gray-600"
-                    }`}>
+                    <span
+                      className={`text-xs ${
+                        isDarkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
                       Subtotal:
                     </span>
-                    <span className={`text-xs font-medium ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <span
+                      className={`text-xs font-medium ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {orderSummary.subtotal.toFixed(2)} ৳
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className={`text-xs ${
-                      isDarkMode ? "text-gray-300" : "text-gray-600"
-                    }`}>
+                    <span
+                      className={`text-xs ${
+                        isDarkMode ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
                       Discount:
                     </span>
                     <span className="text-xs font-medium text-red-500">
                       -{orderSummary.discount.toFixed(2)} ৳
                     </span>
                   </div>
-                  <div className={`border-t pt-1 mt-1 ${
-                    isDarkMode ? "border-gray-700" : "border-gray-200"
-                  }`}>
+                  <div
+                    className={`border-t pt-1 mt-1 ${
+                      isDarkMode ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
                     <div className="flex justify-between items-center">
-                      <span className={`text-sm font-bold ${
-                        isDarkMode ? "text-white" : "text-gray-900"
-                      }`}>
+                      <span
+                        className={`text-sm font-bold ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
                         Total:
                       </span>
                       <span className="text-sm font-bold text-green-600">
@@ -1274,9 +1378,11 @@ const POSPanel = () => {
                 ref={customerSearchRef}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <label className={`block text-xs font-medium ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  }`}>
+                  <label
+                    className={`block text-xs font-medium ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     <Search className="inline mr-1" size={12} />
                     Search Customers
                   </label>
@@ -1319,21 +1425,27 @@ const POSPanel = () => {
               >
                 <div className="mb-2">
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className={`font-semibold text-xs ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <h3
+                      className={`font-semibold text-xs ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       Selected Customer
                     </h3>
                   </div>
                   {selectedCustomer ? (
-                    <div className={`p-1.5 rounded border text-xs ${
-                      isDarkMode
-                        ? "border-blue-500 bg-blue-900/20"
-                        : "border-blue-300 bg-blue-50"
-                    }`}>
+                    <div
+                      className={`p-1.5 rounded border text-xs ${
+                        isDarkMode
+                          ? "border-blue-500 bg-blue-900/20"
+                          : "border-blue-300 bg-blue-50"
+                      }`}
+                    >
                       <div className="flex justify-between items-center">
                         <div className="flex-1 truncate">
-                          <div className="font-medium">{selectedCustomer.name}</div>
+                          <div className="font-medium">
+                            {selectedCustomer.name}
+                          </div>
                           <div className="text-gray-600 dark:text-gray-300">
                             {selectedCustomer.phone}
                           </div>
@@ -1347,11 +1459,13 @@ const POSPanel = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className={`p-1.5 rounded border text-center text-xs ${
-                      isDarkMode
-                        ? "border-gray-700 bg-gray-800/30 text-gray-400"
-                        : "border-gray-300 bg-gray-100/50 text-gray-500"
-                    }`}>
+                    <div
+                      className={`p-1.5 rounded border text-center text-xs ${
+                        isDarkMode
+                          ? "border-gray-700 bg-gray-800/30 text-gray-400"
+                          : "border-gray-300 bg-gray-100/50 text-gray-500"
+                      }`}
+                    >
                       No customer selected
                     </div>
                   )}
@@ -1360,14 +1474,18 @@ const POSPanel = () => {
                 {/* All Customers List */}
                 <div className="mb-2 flex-1 overflow-hidden">
                   <div className="flex justify-between items-center mb-1">
-                    <h3 className={`font-semibold text-xs ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <h3
+                      className={`font-semibold text-xs ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       All Customers
                     </h3>
-                    <span className={`text-xs ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    <span
+                      className={`text-xs ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       {allCustomers?.length || 0}
                     </span>
                   </div>
@@ -1395,30 +1513,35 @@ const POSPanel = () => {
                           >
                             <div className="flex justify-between items-center">
                               <div className="flex-1 truncate">
-                                <div className={`font-medium ${
-                                  selectedCustomer?.id === customer.id
-                                    ? "text-blue-500"
-                                    : isDarkMode
-                                    ? "text-white"
-                                    : "text-gray-900"
-                                }`}>
+                                <div
+                                  className={`font-medium ${
+                                    selectedCustomer?.id === customer.id
+                                      ? "text-blue-500"
+                                      : isDarkMode
+                                      ? "text-white"
+                                      : "text-gray-900"
+                                  }`}
+                                >
                                   {customer.name}
                                 </div>
-                                <div className="truncate">
-                                  {customer.phone}
-                                </div>
+                                <div className="truncate">{customer.phone}</div>
                               </div>
                               {selectedCustomer?.id === customer.id && (
-                                <Check size={10} className="text-green-500 ml-1" />
+                                <Check
+                                  size={10}
+                                  className="text-green-500 ml-1"
+                                />
                               )}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className={`text-center py-4 text-xs ${
-                        isDarkMode ? "text-gray-400" : "text-gray-500"
-                      }`}>
+                      <div
+                        className={`text-center py-4 text-xs ${
+                          isDarkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
                         No customers found
                       </div>
                     )}
@@ -1443,31 +1566,49 @@ const POSPanel = () => {
                   <div className="mt-1 pt-2 border-t border-gray-300 dark:border-gray-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
-                        <Calendar size={10} className={isDarkMode ? "text-blue-400" : "text-blue-600"} />
+                        <Calendar
+                          size={10}
+                          className={
+                            isDarkMode ? "text-blue-400" : "text-blue-600"
+                          }
+                        />
                         <div>
-                          <div className={`text-[10px] ${
-                            isDarkMode ? "text-gray-400" : "text-gray-500"
-                          }`}>
+                          <div
+                            className={`text-[10px] ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
                             DATE
                           </div>
-                          <div className={`text-xs font-bold ${
-                            isDarkMode ? "text-white" : "text-gray-900"
-                          }`}>
-                            {date.split(',')[1]}
+                          <div
+                            className={`text-xs font-bold ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {date.split(",")[1]}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock size={10} className={isDarkMode ? "text-green-400" : "text-green-600"} />
+                        <Clock
+                          size={10}
+                          className={
+                            isDarkMode ? "text-green-400" : "text-green-600"
+                          }
+                        />
                         <div>
-                          <div className={`text-[10px] ${
-                            isDarkMode ? "text-gray-400" : "text-gray-500"
-                          }`}>
+                          <div
+                            className={`text-[10px] ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
                             TIME
                           </div>
-                          <div className={`text-xs font-bold font-mono ${
-                            isDarkMode ? "text-white" : "text-gray-900"
-                          }`}>
+                          <div
+                            className={`text-xs font-bold font-mono ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
                             {time}
                           </div>
                         </div>
@@ -1502,7 +1643,15 @@ const POSPanel = () => {
                   </button>
 
                   {/* Action Buttons */}
-                  {['Refund', 'Pre Order', 'Quotation', 'Exchange', 'Delivery', 'Warranty', 'Service'].map((label) => (
+                  {[
+                    "Refund",
+                    "Pre Order",
+                    "Quotation",
+                    "Exchange",
+                    "Delivery",
+                    "Warranty",
+                    "Service",
+                  ].map((label) => (
                     <button
                       key={label}
                       className={`py-1.5 rounded text-xs border ${
@@ -1708,7 +1857,9 @@ const POSPanel = () => {
                                 <div>
                                   <div
                                     className={`font-medium ${
-                                      isDarkMode ? "text-white" : "text-gray-900"
+                                      isDarkMode
+                                        ? "text-white"
+                                        : "text-gray-900"
                                     }`}
                                   >
                                     {item.product.name}
@@ -1741,7 +1892,9 @@ const POSPanel = () => {
                                   </button>
                                   <span
                                     className={`w-12 text-center font-medium ${
-                                      isDarkMode ? "text-white" : "text-gray-900"
+                                      isDarkMode
+                                        ? "text-white"
+                                        : "text-gray-900"
                                     }`}
                                   >
                                     {item.quantity}
@@ -1951,8 +2104,8 @@ const POSPanel = () => {
                 }`}
               >
                 {/* Selected Customer Display - ALWAYS AT TOP */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="mb-2">
+                  <div className="flex justify-between items-center">
                     <h3
                       className={`font-semibold text-sm ${
                         isDarkMode ? "text-white" : "text-gray-900"
@@ -1986,18 +2139,24 @@ const POSPanel = () => {
                   </div>
                   {selectedCustomer ? (
                     <div
-                      className={`p-1 rounded-lg border ${
+                      className={`py-4 px-2 mr-2 rounded-lg border overflow-hidden max-h-[calc(100%-3rem)] ${
                         isDarkMode
                           ? "border-blue-500 bg-blue-900/20"
                           : "border-blue-300 bg-blue-50"
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <div className="flex-1">
+                        <div className="flex-1 truncate">
                           <div className="font-medium text-sm">
-                            <span className="pr-4">{selectedCustomer.name}</span>
-                            <span className="pr-4">({selectedCustomer.phone})</span>
-                            <span className="pr-4 underline">{selectedCustomer.email}</span>
+                            <span className="pr-4">
+                              {selectedCustomer.name}
+                            </span>
+                            <span className="pr-4">
+                              ({selectedCustomer.phone})
+                            </span>
+                            <span className="pr-4 underline">
+                              {selectedCustomer.email}
+                            </span>
                           </div>
                           {/* <div
                             className={`text-xs mt-1 ${
@@ -2021,20 +2180,20 @@ const POSPanel = () => {
                             setSelectedCustomer(null);
                             showAlert("Customer removed", "info");
                           }}
-                          className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                          className={`rounded-full transition-colors cursor-pointer pl-2 ${
                             isDarkMode
                               ? "hover:bg-red-900/50"
                               : "hover:bg-red-100"
                           }`}
                           title="Remove customer"
                         >
-                          <X size={14} className="text-red-500" />
+                          <X size={12} className="text-red-500" />
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div
-                      className={`p-3 rounded-lg border text-center ${
+                      className={`p-1 rounded-lg border text-center ${
                         isDarkMode
                           ? "border-gray-700 bg-gray-800/30 text-gray-400"
                           : "border-gray-300 bg-gray-100/50 text-gray-500"
@@ -2070,11 +2229,11 @@ const POSPanel = () => {
                         <span className="text-sm">Loading customers...</span>
                       </div>
                     ) : allCustomers && allCustomers.length > 0 ? (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1">
                         {allCustomers.map((customer) => (
                           <div
                             key={customer.id}
-                            className={`p-2 rounded-lg border cursor-pointer transition-all duration-200 ${
+                            className={`p-1 rounded-lg border cursor-pointer transition-all duration-200 ${
                               selectedCustomer?.id === customer.id
                                 ? isDarkMode
                                   ? "border-blue-500 bg-blue-900/20 shadow-md"
@@ -2097,8 +2256,12 @@ const POSPanel = () => {
                                   }`}
                                 >
                                   <span className="pr-4">{customer.name}</span>
-                                  <span className="pr-4">({customer.phone})</span>
-                                  <span className="pr-4 underline">{customer.email}</span>
+                                  <span className="pr-4">
+                                    ({customer.phone})
+                                  </span>
+                                  <span className="pr-4 underline">
+                                    {customer.email}
+                                  </span>
                                 </div>
                                 {/* <div className="flex items-center gap-1.5 mt-0.5">
                                   <div
@@ -2163,11 +2326,11 @@ const POSPanel = () => {
                 </div>
 
                 {/* Fixed Bottom Section */}
-                <div className="mt-auto border-gray-700/50">
+                <div className="mt-auto">
                   {/* Add New Customer Button */}
                   <button
                     onClick={() => setShowAddCustomerModal(true)}
-                    className={`w-full py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                    className={`w-full py-1 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                       isDarkMode
                         ? "bg-gray-700 hover:bg-gray-600 text-white shadow-md"
                         : "bg-gray-800 hover:bg-gray-900 text-white shadow-sm"
@@ -2178,56 +2341,27 @@ const POSPanel = () => {
                   </button>
 
                   {/* Date and Time Display - Professional POS Style */}
-                  <div className="pt-3 border-t border-gray-300 dark:border-gray-700">
-                    <div className="flex items-center justify-between rounded-lg ">
-                      <div className="flex items-center">
-                        <div
-                          className={`p-2 rounded-2xl flex items-center gap-2 ${
-                            isDarkMode ? "bg-gray-700" : "bg-white shadow-sm"
-                          }`}
-                        >
-                          <Calendar
-                            size={16}
-                            className={
-                              isDarkMode ? "text-blue-400" : "text-blue-600"
-                            }
-                          />
-                          {date}
-                        </div>
-                        {/* <div>
-                          <div
-                            className={`text-sm font-bold ${
-                              isDarkMode ? "text-white" : "text-gray-900"
-                            }`}
-                          >
-                            {date}
-                          </div>
-                        </div> */}
+                  <div className="pt-2 border-gray-300 dark:border-gray-700">
+                    <div
+                      className="flex rounded-xl p-2 justify-between backdrop-blur font-bold"
+                    >
+                      <div className={`flex gap-2 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`}>
+                        <Calendar
+                          size={16}
+                          className={
+                            isDarkMode ? "text-blue-400" : "text-blue-600"
+                          }
+                        />
+                        {date}
                       </div>
-
-                      <div className="">
-                        <div
-                          className={`p-2 rounded-2xl flex items-center gap-2 ${
-                            isDarkMode ? "bg-gray-700" : "bg-white shadow-sm"
-                          }`}
-                        >
-                          <Clock
-                            size={16}
-                            className={
-                              isDarkMode ? "text-green-400" : "text-green-600"
-                            }
-                          />
-                          {time}
-                        </div>
-                        {/* <div>
-                          <div
-                            className={`text-sm font-bold font-mono tracking-wider ${
-                              isDarkMode ? "text-white" : "text-gray-900"
-                            }`}
-                          >
-                            {time}
-                          </div>
-                        </div> */}
+                      <div className={`flex gap-2 ${isDarkMode ? "text-green-400" : "text-green-600"}`}>
+                        <Clock
+                          size={16}
+                          className={
+                            isDarkMode ? "text-green-400" : "text-green-600"
+                          }
+                        />
+                        {time}
                       </div>
                     </div>
                   </div>
@@ -2236,7 +2370,7 @@ const POSPanel = () => {
 
               {/* ACTION BUTTONS */}
               <div
-                className={`rounded-2xl border p-2 backdrop-blur ${
+                className={`rounded-2xl border p-1 backdrop-blur ${
                   isDarkMode
                     ? "bg-gray-800/50 border-gray-700"
                     : "bg-white/50 border-gray-200"
@@ -2247,12 +2381,15 @@ const POSPanel = () => {
                   <button
                     onClick={() => {
                       if (cart.length === 0) {
-                        showAlert("Add products first to apply discount", "info");
+                        showAlert(
+                          "Add products first to apply discount",
+                          "info"
+                        );
                         return;
                       }
                       setShowDiscountModal(true);
                     }}
-                    className="py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="py-1 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Percent size={14} />
                     Discount
@@ -2270,7 +2407,7 @@ const POSPanel = () => {
                   ].map(({ label }) => (
                     <button
                       key={label}
-                      className={`py-2 rounded-xl font-bold border transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`py-1 rounded-xl font-bold border transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                         isDarkMode
                           ? "border-gray-600 bg-gray-800/50 hover:bg-gray-700 text-white"
                           : "border-gray-300 bg-white/50 hover:bg-gray-100 text-gray-800"
@@ -2298,7 +2435,7 @@ const POSPanel = () => {
                     setShowPaymentModal(true);
                   }}
                   disabled={creatingSale}
-                  className={`w-full mt-2 text-white font-bold py-2 rounded-xl text-lg transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`w-full mt-1 text-white font-bold py-1 rounded-xl text-lg transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                     creatingSale
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-green-500 hover:bg-green-600"
@@ -2315,7 +2452,7 @@ const POSPanel = () => {
                 </button>
 
                 {/* Cash Buttons */}
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-1 mt-1">
                   <button
                     onClick={() => {
                       if (cart.length === 0) {
@@ -2325,7 +2462,7 @@ const POSPanel = () => {
                       setPaymentAmount(orderSummary.total.toString());
                       setShowPaymentModal(true);
                     }}
-                    className="flex-1 bg-green-200 hover:bg-green-300 text-black py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="flex-1 bg-green-200 hover:bg-green-300 text-black py-1 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
                   >
                     Cash IN
                   </button>
@@ -2333,7 +2470,7 @@ const POSPanel = () => {
                     onClick={() =>
                       showAlert("Cash Out functionality coming soon", "info")
                     }
-                    className="flex-1 bg-red-200 hover:bg-red-300 text-black py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="flex-1 bg-red-200 hover:bg-red-300 text-black py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
                   >
                     Cash Out
                   </button>
@@ -2343,7 +2480,7 @@ const POSPanel = () => {
                 <button
                   onClick={handleClearAll}
                   disabled={cart.length === 0 && !selectedCustomer}
-                  className={`w-full mt-2 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`w-full mt-1 py-1 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                     cart.length === 0 && !selectedCustomer
                       ? "bg-gray-300 cursor-not-allowed dark:bg-gray-700"
                       : "bg-gray-400 hover:bg-gray-500 dark:bg-gray-600 dark:hover:bg-gray-500"
@@ -2525,18 +2662,23 @@ const POSPanel = () => {
               Add New Customer
             </h3>
             <div className="space-y-4">
-              {['Name', 'Phone', 'Email', 'Address'].map((field) => (
+              {["Name", "Phone", "Email", "Address"].map((field) => (
                 <div key={field}>
-                  <label className={`block mb-2 font-medium ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  }`}>
-                    {field} {['Name', 'Phone'].includes(field) ? '*' : ''}
+                  <label
+                    className={`block mb-2 font-medium ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    {field} {["Name", "Phone"].includes(field) ? "*" : ""}
                   </label>
-                  {field === 'Address' ? (
+                  {field === "Address" ? (
                     <textarea
                       value={newCustomer.address}
                       onChange={(e) =>
-                        setNewCustomer({ ...newCustomer, address: e.target.value })
+                        setNewCustomer({
+                          ...newCustomer,
+                          address: e.target.value,
+                        })
                       }
                       className={`w-full p-3 border rounded-lg ${
                         isDarkMode
@@ -2548,10 +2690,23 @@ const POSPanel = () => {
                     />
                   ) : (
                     <input
-                      type={field === 'Email' ? 'email' : field === 'Phone' ? 'tel' : 'text'}
-                      value={newCustomer[field.toLowerCase() as keyof typeof newCustomer]}
+                      type={
+                        field === "Email"
+                          ? "email"
+                          : field === "Phone"
+                          ? "tel"
+                          : "text"
+                      }
+                      value={
+                        newCustomer[
+                          field.toLowerCase() as keyof typeof newCustomer
+                        ]
+                      }
                       onChange={(e) =>
-                        setNewCustomer({ ...newCustomer, [field.toLowerCase()]: e.target.value })
+                        setNewCustomer({
+                          ...newCustomer,
+                          [field.toLowerCase()]: e.target.value,
+                        })
                       }
                       className={`w-full p-3 border rounded-lg ${
                         isDarkMode
@@ -2559,7 +2714,7 @@ const POSPanel = () => {
                           : "bg-white border-gray-300"
                       }`}
                       placeholder={`Enter ${field.toLowerCase()}`}
-                      required={['Name', 'Phone'].includes(field)}
+                      required={["Name", "Phone"].includes(field)}
                     />
                   )}
                 </div>
@@ -2567,9 +2722,15 @@ const POSPanel = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleAddNewCustomer}
-                  disabled={creatingCustomer || !newCustomer.name.trim() || !newCustomer.phone.trim()}
+                  disabled={
+                    creatingCustomer ||
+                    !newCustomer.name.trim() ||
+                    !newCustomer.phone.trim()
+                  }
                   className={`flex-1 py-3 rounded-lg font-medium ${
-                    creatingCustomer || !newCustomer.name.trim() || !newCustomer.phone.trim()
+                    creatingCustomer ||
+                    !newCustomer.name.trim() ||
+                    !newCustomer.phone.trim()
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-green-500 hover:bg-green-600 text-white"
                   }`}
@@ -2579,7 +2740,12 @@ const POSPanel = () => {
                 <button
                   onClick={() => {
                     setShowAddCustomerModal(false);
-                    setNewCustomer({ name: "", email: "", phone: "", address: "" });
+                    setNewCustomer({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      address: "",
+                    });
                   }}
                   className={`flex-1 py-3 rounded-lg font-medium ${
                     isDarkMode
@@ -2709,10 +2875,11 @@ const POSPanel = () => {
                       isDarkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    Change: 
+                    Change:
                     {(parseFloat(paymentAmount) - orderSummary.total).toFixed(
                       2
-                    )} ৳
+                    )}{" "}
+                    ৳
                   </div>
                 </div>
               )}

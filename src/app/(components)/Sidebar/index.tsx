@@ -41,7 +41,8 @@ const SidebarLink = ({
   isCollapsed,
 }: SidebarLinkProps) => {
   const pathname = usePathname();
-  const isActive = pathname === href || (pathname === "/" && href === "/dashboard");
+  const isActive =
+    pathname === href || (pathname === "/" && href === "/dashboard");
 
   return (
     <Link href={href}>
@@ -66,14 +67,19 @@ const Sidebar = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
   };
 
-  const sidebarClassNames = `fixed flex flex-col mt-12 ${
-    isSidebarCollapsed ? "w-0 md:w-12" : "w-72 md:w-60"
-  } transition-all overflow-hidden h-full shadow-md z-40`;
+  const sidebarClassNames = `fixed flex flex-col mt-12  transition-all h-full overflow-auto shadow-md z-40 ${
+    isSidebarCollapsed ? "w-0 md:w-12" : "w-55 md:w-60"
+  } ${
+    isDarkMode
+      ? "border bg-black border-gray-700"
+      : "border bg-white border-gray-200"
+  }`;
 
   return (
     <div className={sidebarClassNames}>
@@ -157,10 +163,6 @@ const Sidebar = () => {
           label="Settings"
           isCollapsed={isSidebarCollapsed}
         />
-      </div>
-      {/* footer */}
-      <div className={`${isSidebarCollapsed ? "hidden" : "block"} mb-10`}>
-        <p className="text-center text-xs text-gray-500">&copy; 2025 Sunbeam</p>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ const CardPopularProducts = () => {
   }, [dashboardMetrics?.popularProducts]);
 
   return (
-    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border" : ""}`}>
+    <div className={`shadow-2xl rounded-2xl ${isDarkMode ? "border bg-gray-800/50 border-gray-700" : "border bg-white/50 border-gray-200"}`}>
       {isLoading ? (
         <div className="m-5">Loading...</div>
       ) : (
