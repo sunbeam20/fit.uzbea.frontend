@@ -88,6 +88,7 @@ const SalesPage = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   // API calls
   const { data: sales = [], isLoading, error, refetch } = useGetSalesQuery();
@@ -433,7 +434,9 @@ const SalesPage = () => {
 
   return (
     <div
-      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}
+      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
+        isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"
+      }`}
     >
       {/* Header */}
       <div className="mb-6">
@@ -457,11 +460,11 @@ const SalesPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-blue-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Total Sales</p>
-              <p className="text-2xl font-bold">{sales.length}</p>
+              <p className="text-sm text-blue-500">Total Sales</p>
+              <p className="text-2xl font-bold text-blue-500">{sales.length}</p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
               <TrendingUp className="w-6 h-6 text-blue-500" />
@@ -469,10 +472,10 @@ const SalesPage = () => {
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-green-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Completed</p>
+              <p className="text-sm text-green-500">Completed</p>
               <p className="text-2xl font-bold text-green-500">
                 {
                   sales.filter(
@@ -487,10 +490,10 @@ const SalesPage = () => {
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-orange-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Pending</p>
+              <p className="text-sm text-orange-500">Pending</p>
               <p className="text-2xl font-bold text-orange-500">
                 {
                   sales.filter(
@@ -505,10 +508,10 @@ const SalesPage = () => {
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-purple-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Total Revenue</p>
+              <p className="text-sm text-purple-500">Total Revenue</p>
               <p className="text-2xl font-bold text-purple-500">
                 ৳
                 {sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0)}
@@ -522,18 +525,18 @@ const SalesPage = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="rounded-lg shadow-sm border mb-6">
+      <div className={`rounded-lg shadow-sm border mb-6 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
         <div className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <div className="relative">
+              <div className="relative ">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search by customer name or sale ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}
                 />
               </div>
             </div>
@@ -543,20 +546,20 @@ const SalesPage = () => {
                 onClick={() =>
                   setShowFilterStatusDropdown(!showFilterStatusDropdown)
                 }
-                className="flex items-center justify-between px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                className={`flex items-center justify-between px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}
               >
                 <span>{getFilterStatusDisplayText()}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               {showFilterStatusDropdown && (
-                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                <ul className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg ${isDarkMode ? "bg-gray-800/90 border-gray-700" : "bg-white/50 border-gray-200"}`}>
                   <li>
                     <button
                       onClick={() => {
                         setStatusFilter("all");
                         setShowFilterStatusDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                     >
                       All Status
                     </button>
@@ -567,7 +570,7 @@ const SalesPage = () => {
                         setStatusFilter("completed");
                         setShowFilterStatusDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                     >
                       Completed
                     </button>
@@ -578,7 +581,7 @@ const SalesPage = () => {
                         setStatusFilter("pending");
                         setShowFilterStatusDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                     >
                       Pending
                     </button>
@@ -588,11 +591,11 @@ const SalesPage = () => {
             </div>
 
             <div className="flex gap-2">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <button className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
                 <Filter className="w-4 h-4" />
                 Filter
               </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <button className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
                 <Download className="w-4 h-4" />
                 Export
               </button>
@@ -602,40 +605,40 @@ const SalesPage = () => {
       </div>
 
       {/* Sales Table */}
-      <div className="rounded-lg shadow-sm border overflow-hidden">
+      <div className={`rounded-lg shadow-sm border overflow-hidden ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b">
+            <thead className={`border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Sale ID
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Customer
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={`divide-y ${isDarkMode ? "divide-gray-700" : "divide-gray-200"}`}>
               {currentSales.map((sale) => {
                 const isCompleted =
                   Number(sale.totalPaid) >= Number(sale.totalAmount);
                 const status = isCompleted ? "completed" : "pending";
 
                 return (
-                  <tr key={sale.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={sale.id} className="hover:bg-gray-300 hover:text-black">
+                    <td className="px-3 py-3 whitespace-nowrap">
                       <div
                         className="text-sm font-medium text-blue-600 cursor-pointer hover:underline"
                         onClick={() => router.push(`/sale/${sale.id}`)}
@@ -643,22 +646,22 @@ const SalesPage = () => {
                         #{sale.id}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm">{sale.Customers?.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm">
                         {new Date(sale.created_at).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm font-medium">
                         ৳{Number(sale.totalAmount)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        className={`inline-flex items-center px-2.5 py-2 rounded-lg text-xs font-bold capitalize ${
                           status === "completed"
                             ? "bg-green-100 text-green-800"
                             : "bg-yellow-100 text-yellow-800"
@@ -667,8 +670,8 @@ const SalesPage = () => {
                         {status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                      <div className="flex-1 items-center space-x-2">
                         <button
                           onClick={() => router.push(`/sale/${sale.id}`)}
                           className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
@@ -797,19 +800,19 @@ const SalesPage = () => {
                       onClick={() =>
                         setShowCustomerDropdown(!showCustomerDropdown)
                       }
-                      className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                     >
                       <span>{getCustomerDisplayText()}</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
                     {showCustomerDropdown && (
-                      <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <ul className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${isDarkMode ? "bg-gray-900" : "bg-white"}`}>
                         {customers.map((customer) => (
                           <li key={customer.id}>
                             <button
                               type="button"
                               onClick={() => selectCustomer(customer)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 flex justify-between items-center"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black flex justify-between items-center cursor-pointer"
                             >
                               <span>{customer.name}</span>
                               <span className="text-sm text-gray-500">
@@ -830,7 +833,7 @@ const SalesPage = () => {
                       type="text"
                       value={saleForm.customerPhone}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className={`w-full px-3 py-2 border rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                     />
                   </div>
 
@@ -842,7 +845,7 @@ const SalesPage = () => {
                       value={saleForm.customerAddress}
                       disabled
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                     />
                   </div>
 
@@ -856,7 +859,7 @@ const SalesPage = () => {
                       onChange={(e) =>
                         setSaleForm({ ...saleForm, dueDate: e.target.value })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                     />
                   </div>
 
@@ -870,13 +873,13 @@ const SalesPage = () => {
                         onClick={() =>
                           setShowPaymentDropdown(!showPaymentDropdown)
                         }
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                       >
                         <span>{getPaymentDisplayText()}</span>
                         <ChevronDown className="w-4 h-4" />
                       </button>
                       {showPaymentDropdown && (
-                        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                        <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
                           <li>
                             <button
                               type="button"
@@ -887,7 +890,7 @@ const SalesPage = () => {
                                 });
                                 setShowPaymentDropdown(false);
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                             >
                               Cash
                             </button>
@@ -902,7 +905,7 @@ const SalesPage = () => {
                                 });
                                 setShowPaymentDropdown(false);
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                             >
                               Card
                             </button>
@@ -917,7 +920,7 @@ const SalesPage = () => {
                                 });
                                 setShowPaymentDropdown(false);
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                             >
                               Bank Transfer
                             </button>
@@ -935,13 +938,13 @@ const SalesPage = () => {
                         onClick={() =>
                           setShowStatusDropdown(!showStatusDropdown)
                         }
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                       >
                         <span>{getStatusDisplayText()}</span>
                         <ChevronDown className="w-4 h-4" />
                       </button>
                       {showStatusDropdown && (
-                        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                        <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
                           <li>
                             <button
                               type="button"
@@ -949,7 +952,7 @@ const SalesPage = () => {
                                 setSaleForm({ ...saleForm, status: "pending" });
                                 setShowStatusDropdown(false);
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                             >
                               Pending
                             </button>
@@ -964,7 +967,7 @@ const SalesPage = () => {
                                 });
                                 setShowStatusDropdown(false);
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
                             >
                               Completed
                             </button>
@@ -986,19 +989,19 @@ const SalesPage = () => {
                       onClick={() =>
                         setShowProductDropdown(!showProductDropdown)
                       }
-                      className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
                     >
                       <span>Select Product</span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
                     {showProductDropdown && (
-                      <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <ul className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${isDarkMode ? "bg-gray-900" : "bg-white"}`}>
                         {products.map((product) => (
                           <li key={product.id}>
                             <button
                               type="button"
                               onClick={() => addProductToSale(product.id)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 flex justify-between items-center"
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black flex justify-between items-center cursor-pointer"
                             >
                               <div>
                                 <div className="font-medium">
@@ -1019,8 +1022,8 @@ const SalesPage = () => {
                   </div>
 
                   {/* Selected Products */}
-                  <div className="border rounded-lg">
-                    <div className="p-3 border-b bg-gray-50">
+                  <div className={`border rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
+                    <div className={`p-3 border-b ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
                       <h3 className="font-medium">Selected Products</h3>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
@@ -1036,7 +1039,7 @@ const SalesPage = () => {
                           return (
                             <div
                               key={item.productId}
-                              className="p-3 border-b flex items-center justify-between"
+                              className={`p-3 border-b flex items-center justify-between ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}
                             >
                               <div className="flex-1">
                                 <div className="font-medium">
@@ -1054,7 +1057,7 @@ const SalesPage = () => {
                                       item.quantity - 1
                                     )
                                   }
-                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100"
+                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100 hover:text-black cursor-pointer"
                                 >
                                   -
                                 </button>
@@ -1068,7 +1071,7 @@ const SalesPage = () => {
                                       item.quantity + 1
                                     )
                                   }
-                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100"
+                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100 hover:text-black cursor-pointer"
                                 >
                                   +
                                 </button>
@@ -1090,7 +1093,7 @@ const SalesPage = () => {
                       )}
                     </div>
                     {saleForm.items.length > 0 && (
-                      <div className="p-3 border-t bg-gray-50">
+                      <div className={`p-3 border-t ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
                         <div className="flex justify-between items-center font-bold">
                           <span>Total Amount:</span>
                           <span>৳{totalAmount.toFixed(2)}</span>

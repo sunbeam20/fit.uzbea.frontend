@@ -67,20 +67,16 @@ const SingleSalePage = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   // API calls
-  const { 
-    data: sale, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useGetSaleQuery(saleId);
+  const { data: sale, isLoading, error, refetch } = useGetSaleQuery(saleId);
   const [updateSale] = useUpdateSaleMutation();
   const [deleteSale] = useDeleteSaleMutation();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  
+
   // Edit form state
   const [editForm, setEditForm] = useState({
     customerName: "",
@@ -99,7 +95,10 @@ const SingleSalePage = () => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowStatusDropdown(false);
       }
     };
@@ -116,7 +115,10 @@ const SingleSalePage = () => {
         customerPhone: sale.Customers?.phone || "",
         customerAddress: sale.Customers?.address || "",
         totalPaid: Number(sale.totalPaid),
-        status: Number(sale.totalPaid) >= Number(sale.totalAmount) ? "completed" : "pending",
+        status:
+          Number(sale.totalPaid) >= Number(sale.totalAmount)
+            ? "completed"
+            : "pending",
       });
     }
   }, [sale]);
@@ -154,7 +156,7 @@ const SingleSalePage = () => {
 
       // Calculate due amount based on total paid
       const dueAmount = Number(sale.totalAmount) - editForm.totalPaid;
-      
+
       const updateData = {
         totalPaid: editForm.totalPaid,
         // You might need to update customer information separately
@@ -163,12 +165,11 @@ const SingleSalePage = () => {
 
       await updateSale({
         id: saleId,
-        sale: updateData
+        sale: updateData,
       }).unwrap();
-      
+
       setShowEditModal(false);
       refetch(); // Refresh the data
-      
     } catch (error) {
       console.error("Failed to update sale:", error);
       alert("Failed to update sale. Please try again.");
@@ -177,16 +178,22 @@ const SingleSalePage = () => {
 
   const getStatusDisplayText = () => {
     switch (editForm.status) {
-      case "completed": return "Completed";
-      case "pending": return "Pending";
-      case "cancelled": return "Cancelled";
-      default: return "Select Status";
+      case "completed":
+        return "Completed";
+      case "pending":
+        return "Pending";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return "Select Status";
     }
   };
 
   const getSaleStatus = () => {
     if (!sale) return "pending";
-    return Number(sale.totalPaid) >= Number(sale.totalAmount) ? "completed" : "pending";
+    return Number(sale.totalPaid) >= Number(sale.totalAmount)
+      ? "completed"
+      : "pending";
   };
 
   const getStatusColor = (status: string) => {
@@ -204,7 +211,9 @@ const SingleSalePage = () => {
 
   if (isLoading) {
     return (
-      <div className={`${getContentMargin()} p-6 min-h-screen bg-gray-50 flex items-center justify-center`}>
+      <div
+        className={`${getContentMargin()} p-6 min-h-screen flex items-center justify-center`}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading sale details...</p>
@@ -215,7 +224,9 @@ const SingleSalePage = () => {
 
   if (error || !sale) {
     return (
-      <div className={`${getContentMargin()} p-6 min-h-screen bg-gray-50 flex items-center justify-center`}>
+      <div
+        className={`${getContentMargin()} p-6 min-h-screen flex items-center justify-center`}
+      >
         <div className="text-center">
           <TrendingUp className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-red-800 mb-2">
@@ -244,17 +255,21 @@ const SingleSalePage = () => {
     );
   }
 
-  const dueAmount = sale ? Number(sale.totalAmount) - Number(sale.totalPaid) : 0;
+  const dueAmount = sale
+    ? Number(sale.totalAmount) - Number(sale.totalPaid)
+    : 0;
   const currentStatus = getSaleStatus();
 
   return (
-    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}>
+    <div
+      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}
+    >
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={() => router.push("/sale")}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -269,11 +284,17 @@ const SingleSalePage = () => {
 
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentStatus)}`}>
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(
+                currentStatus
+              )}`}
+            >
               {currentStatus}
             </span>
             <span className="text-sm text-gray-600">
-              {sale.created_at ? new Date(sale.created_at).toLocaleDateString() : 'N/A'}
+              {sale.dueDate
+                ? new Date(sale.dueDate).toLocaleDateString()
+                : "N/A"}
             </span>
           </div>
           <div className="flex gap-2">
@@ -306,7 +327,7 @@ const SingleSalePage = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Information */}
-          <div className="rounded-lg shadow-sm border overflow-hidden">
+          <div className={`rounded-lg shadow-sm border overflow-hidden ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <User className="w-5 h-5" />
@@ -317,13 +338,15 @@ const SingleSalePage = () => {
                   <label className="block text-sm font-medium text-gray-500 mb-1">
                     Customer Name
                   </label>
-                  <p className="text-lg font-semibold">{sale.Customers?.name || 'N/A'}</p>
+                  <p className="text-lg font-semibold">
+                    {sale.Customers?.name || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">
                     Phone Number
                   </label>
-                  <p className="text-lg">{sale.Customers?.phone || 'N/A'}</p>
+                  <p className="text-lg">{sale.Customers?.phone || "N/A"}</p>
                 </div>
                 {sale.Customers?.email && (
                   <div>
@@ -346,7 +369,7 @@ const SingleSalePage = () => {
           </div>
 
           {/* Items Table */}
-          <div className="rounded-lg shadow-sm border overflow-hidden">
+          <div className={`rounded-lg shadow-sm border overflow-hidden ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Package className="w-5 h-5" />
@@ -354,7 +377,7 @@ const SingleSalePage = () => {
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b">
+                  <thead className={`border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Product
@@ -370,11 +393,13 @@ const SingleSalePage = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className={`divide-y ${isDarkMode ? "divide-gray-700" : "divide-gray-200"}`}>
                     {sale.SalesItems.map((item) => (
                       <tr key={item.id}>
                         <td className="px-4 py-3">
-                          <div className="text-sm font-medium">{item.Products.name}</div>
+                          <div className="text-sm font-medium">
+                            {item.Products.name}
+                          </div>
                           {item.Products.specification && (
                             <div className="text-sm text-gray-500">
                               {item.Products.specification}
@@ -385,11 +410,16 @@ const SingleSalePage = () => {
                           <div className="text-sm">{item.quantity}</div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm">৳{Number(item.unitPrice)}</div>
+                          <div className="text-sm">
+                            ৳{Number(item.unitPrice)}
+                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="text-sm font-medium">
-                            ৳{(item.quantity * Number(item.unitPrice)).toFixed(2)}
+                            ৳
+                            {(item.quantity * Number(item.unitPrice)).toFixed(
+                              2
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -404,7 +434,7 @@ const SingleSalePage = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Sale Summary */}
-          <div className="rounded-lg shadow-sm border p-6">
+          <div className={`rounded-lg shadow-sm border p-6 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5" />
               Sale Summary
@@ -412,23 +442,35 @@ const SingleSalePage = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Amount</span>
-                <span className="font-semibold">৳{Number(sale.totalAmount)}</span>
+                <span className="font-semibold">
+                  ৳{Number(sale.totalAmount)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Paid</span>
-                <span className="font-semibold text-green-600">৳{Number(sale.totalPaid)}</span>
+                <span className="font-semibold text-green-600">
+                  ৳{Number(sale.totalPaid)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Due Amount</span>
-                <span className={`font-semibold ${dueAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                <span
+                  className={`font-semibold ${
+                    dueAmount > 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
                   ৳{dueAmount}
                 </span>
               </div>
-              <div className="border-t pt-3 flex justify-between items-center">
+              <div className={`border-t pt-3 flex justify-between items-center ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
                 <span className="text-lg font-bold">Status</span>
-                <span className={`text-lg font-bold ${
-                  currentStatus === "completed" ? "text-green-600" : "text-yellow-600"
-                }`}>
+                <span
+                  className={`text-lg font-bold capitalize ${
+                    currentStatus === "completed"
+                      ? "text-green-600"
+                      : "text-yellow-600"
+                  }`}
+                >
                   {currentStatus}
                 </span>
               </div>
@@ -436,7 +478,7 @@ const SingleSalePage = () => {
           </div>
 
           {/* Payment Information */}
-          <div className="rounded-lg shadow-sm border p-6">
+          <div className={`rounded-lg shadow-sm border p-6 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
               Payment Information
@@ -445,35 +487,43 @@ const SingleSalePage = () => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Due Date</span>
                 <span className="font-semibold">
-                  {sale.dueDate ? new Date(sale.dueDate).toLocaleDateString() : 'N/A'}
+                  {sale.dueDate
+                    ? new Date(sale.dueDate).toLocaleDateString()
+                    : "N/A"}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Sales Person</span>
-                <span className="font-semibold">{sale.Users?.name || 'N/A'}</span>
+                <span className="font-semibold">
+                  {sale.Users?.name || "N/A"}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="rounded-lg shadow-sm border p-6">
+          <div className={`rounded-lg shadow-sm border p-6 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
             <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <button
                 onClick={handlePrint}
-                className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className={`w-full text-left p-3 border rounded-lg hover:bg-gray-50 hover:text-black transition-colors flex items-center gap-2 ${isDarkMode ? "bg-gray-700/50 border-gray-600" : "bg-white/50 border-gray-200"}`}
               >
                 <Printer className="w-4 h-4" />
                 <div>
                   <div className="font-medium">Print Invoice</div>
-                  <div className="text-sm text-gray-500">Generate printable invoice</div>
+                  <div className="text-sm text-gray-500">
+                    Generate printable invoice
+                  </div>
                 </div>
               </button>
-              <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <button className={`w-full text-left p-3 border rounded-lg hover:bg-gray-50 hover:text-black transition-colors flex items-center gap-2 ${isDarkMode ? "bg-gray-700/50 border-gray-600" : "bg-white/50 border-gray-200"}`}>
                 <Download className="w-4 h-4" />
                 <div>
                   <div className="font-medium">Download PDF</div>
-                  <div className="text-sm text-gray-500">Download as PDF file</div>
+                  <div className="text-sm text-gray-500">
+                    Download as PDF file
+                  </div>
                 </div>
               </button>
             </div>
@@ -484,7 +534,7 @@ const SingleSalePage = () => {
       {/* Edit Sale Modal */}
       {showEditModal && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="rounded-lg border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Edit Sale Payment</h2>
@@ -506,7 +556,7 @@ const SingleSalePage = () => {
                       type="text"
                       value={editForm.customerName}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className={`w-full px-3 py-2 border rounded-lg ${isDarkMode ? "border-gray-700 text-white" : "border-gray-200"}`}
                     />
                   </div>
 
@@ -518,7 +568,7 @@ const SingleSalePage = () => {
                       type="text"
                       value={editForm.customerPhone}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className={`w-full px-3 py-2 border rounded-lg ${isDarkMode ? "border-gray-700 text-white" : "border-gray-200"}`}
                     />
                   </div>
                 </div>
@@ -531,7 +581,7 @@ const SingleSalePage = () => {
                     type="number"
                     value={sale ? Number(sale.totalAmount) : 0}
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                    className={`w-full px-3 py-2 border rounded-lg ${isDarkMode ? "border-gray-700 text-white" : "border-gray-200"}`}
                   />
                 </div>
 
@@ -545,13 +595,13 @@ const SingleSalePage = () => {
                     onChange={(e) => {
                       const paid = parseFloat(e.target.value) || 0;
                       const maxAmount = sale ? Number(sale.totalAmount) : 0;
-                      setEditForm({ 
-                        ...editForm, 
+                      setEditForm({
+                        ...editForm,
                         totalPaid: Math.min(paid, maxAmount),
-                        status: paid >= maxAmount ? "completed" : "pending"
+                        status: paid >= maxAmount ? "completed" : "pending",
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700 text-white" : "border-gray-200"}`}
                     max={sale ? Number(sale.totalAmount) : 0}
                     min="0"
                     step="0.01"
@@ -568,13 +618,13 @@ const SingleSalePage = () => {
                   <button
                     type="button"
                     onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                    className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                    className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}
                   >
                     <span>{getStatusDisplayText()}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
                   {showStatusDropdown && (
-                    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    <ul className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg ${isDarkMode ? "bg-gray-900/90 border-gray-700" : "bg-white/90 border-gray-300"}`}>
                       <li>
                         <button
                           type="button"
@@ -582,7 +632,7 @@ const SingleSalePage = () => {
                             setEditForm({ ...editForm, status: "pending" });
                             setShowStatusDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-300 hover:text-black cursor-pointer"
                         >
                           Pending
                         </button>
@@ -594,7 +644,7 @@ const SingleSalePage = () => {
                             setEditForm({ ...editForm, status: "completed" });
                             setShowStatusDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-300 hover:text-black cursor-pointer"
                         >
                           Completed
                         </button>
@@ -604,7 +654,7 @@ const SingleSalePage = () => {
                 </div>
 
                 {/* Summary Preview */}
-                <div className="border rounded-lg p-4 bg-gray-50">
+                <div className={`border rounded-lg p-4 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
                   <h4 className="font-medium mb-3">Payment Summary</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -613,12 +663,24 @@ const SingleSalePage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Amount Paid:</span>
-                      <span className="text-green-600">৳{editForm.totalPaid}</span>
+                      <span className="text-green-600">
+                        ৳{editForm.totalPaid}
+                      </span>
                     </div>
                     <div className="border-t pt-2 flex justify-between font-semibold">
                       <span>Remaining Due:</span>
-                      <span className={`${(sale ? Number(sale.totalAmount) : 0) - editForm.totalPaid > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        ৳{(sale ? Number(sale.totalAmount) : 0) - editForm.totalPaid}
+                      <span
+                        className={`${
+                          (sale ? Number(sale.totalAmount) : 0) -
+                            editForm.totalPaid >
+                          0
+                            ? "text-red-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        ৳
+                        {(sale ? Number(sale.totalAmount) : 0) -
+                          editForm.totalPaid}
                       </span>
                     </div>
                   </div>
@@ -656,10 +718,11 @@ const SingleSalePage = () => {
                 </div>
                 <h3 className="text-lg font-bold">Delete Sale</h3>
               </div>
-              
+
               <p className="text-gray-600 mb-6">
-                Are you sure you want to delete sale <strong>#{sale.id}</strong>? 
-                This action cannot be undone and will remove all associated records.
+                Are you sure you want to delete sale <strong>#{sale.id}</strong>
+                ? This action cannot be undone and will remove all associated
+                records.
               </p>
 
               <div className="flex justify-end gap-3">
