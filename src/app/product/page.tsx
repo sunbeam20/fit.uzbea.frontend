@@ -52,6 +52,13 @@ const ProductsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  // Modal category state
+  const [selectedCategoryName, setSelectedCategoryName] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [selectedWarranty, setSelectedWarranty] = useState<"Yes" | "No">("No");
+
   // Dropdown states
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showWarrantyDropdown, setShowWarrantyDropdown] = useState(false);
@@ -142,10 +149,33 @@ const ProductsPage = () => {
   const handleAddProduct = () => {
     setShowAddModal(true);
     setEditingProduct(null);
+    // Reset modal selections
+    setSelectedCategoryName("");
+    setSelectedCategoryId(null);
+    setSelectedWarranty("No");
   };
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
+
+    // Set category data for the modal
+    if (product.category_id) {
+      const category = categories.find((cat) => cat.id === product.category_id);
+      if (category) {
+        setSelectedCategoryName(category.name);
+        setSelectedCategoryId(category.id);
+      } else {
+        setSelectedCategoryName("");
+        setSelectedCategoryId(null);
+      }
+    } else {
+      setSelectedCategoryName("");
+      setSelectedCategoryId(null);
+    }
+
+    // Set warranty for the modal
+    setSelectedWarranty(product.warranty as "Yes" | "No");
+
     setShowAddModal(true);
   };
 
@@ -171,8 +201,9 @@ const ProductsPage = () => {
         wholesalePrice: parseFloat(formData.get("wholesalePrice") as string),
         retailPrice: parseFloat(formData.get("retailPrice") as string),
         serial: formData.get("serial") as string,
-        warranty: formData.get("warranty") as "Yes" | "No",
-        category_id: parseInt(formData.get("category_id") as string),
+        warranty: selectedWarranty,
+        // Convert null to undefined to match Product type
+        category_id: selectedCategoryId || undefined,
       };
 
       if (editingProduct) {
@@ -186,6 +217,10 @@ const ProductsPage = () => {
 
       setShowAddModal(false);
       setEditingProduct(null);
+      // Reset modal selections
+      setSelectedCategoryName("");
+      setSelectedCategoryId(null);
+      setSelectedWarranty("No");
     } catch (error) {
       console.error("Failed to save product:", error);
       alert(
@@ -252,7 +287,11 @@ const ProductsPage = () => {
 
   return (
     <div
-      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}
+      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
+        isDarkMode
+          ? "bg-gray-800/50 border-gray-700"
+          : "bg-white/50 border-gray-200"
+      }`}
     >
       {/* Header */}
       <div className="mb-6">
@@ -276,22 +315,24 @@ const ProductsPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-blue-100 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Total Products</p>
-              <p className="text-2xl font-bold">{products.length}</p>
+              <p className="text-sm text-black">Total Products</p>
+              <p className="text-2xl font-bold text-blue-500">
+                {products.length}
+              </p>
             </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 rounded-lg">
               <Package className="w-6 h-6 text-blue-500" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-orange-100 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Low Stock</p>
+              <p className="text-sm text-black">Low Stock</p>
               <p className="text-2xl font-bold text-orange-500">
                 {products.filter((p) => p.quantity < 10).length}
               </p>
@@ -302,10 +343,10 @@ const ProductsPage = () => {
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-green-100 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">With Warranty</p>
+              <p className="text-sm text-black">With Warranty</p>
               <p className="text-2xl font-bold text-green-500">
                 {products.filter((p) => p.warranty === "Yes").length}
               </p>
@@ -316,10 +357,10 @@ const ProductsPage = () => {
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm border">
+        <div className="rounded-lg p-4 shadow-sm bg-purple-100 border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm">Categories</p>
+              <p className="text-sm text-black">Categories</p>
               <p className="text-2xl font-bold text-purple-500">
                 {
                   Array.from(new Set(products.map((p) => p.Categories?.name)))
@@ -335,7 +376,13 @@ const ProductsPage = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="rounded-lg shadow-sm border mb-6">
+      <div
+        className={`rounded-lg shadow-sm mb-6 border ${
+          isDarkMode
+            ? "bg-gray-800/50 border-gray-700"
+            : "bg-white/50 border-gray-200"
+        }`}
+      >
         <div className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
@@ -347,7 +394,11 @@ const ProductsPage = () => {
                   placeholder="Search products by name or serial..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? "bg-gray-800/50 border-gray-700"
+                      : "bg-white/50 border-gray-200"
+                  }`}
                 />
               </div>
             </div>
@@ -356,24 +407,38 @@ const ProductsPage = () => {
             <div className="relative" ref={categoryDropdownRef}>
               <button
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                className="flex items-center justify-between w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:border-blue-500"
+                className={`flex items-center justify-between w-full md:w-60 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
               >
                 <span>{getCategoryDisplayText()}</span>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
 
               {showCategoryDropdown && (
-                <ul className="absolute z-10 w-full md:w-48 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <ul
+                  className={`absolute z-10 w-full md:w-48 mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                    isDarkMode
+                      ? "bg-gray-800/90 border-gray-700"
+                      : "bg-white/80 border-gray-200"
+                  }`}
+                >
                   <li>
                     <button
                       onClick={() => {
                         setSelectedCategory("all");
                         setShowCategoryDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                      className={`w-full text-left px-4 py-2 cursor-pointer ${
                         selectedCategory === "all"
                           ? "bg-blue-50 text-blue-600"
                           : ""
+                      } ${
+                        isDarkMode
+                          ? "hover:bg-gray-100 hover:text-black"
+                          : "hover:bg-gray-100 hover:text-black"
                       }`}
                     >
                       All Categories
@@ -386,7 +451,7 @@ const ProductsPage = () => {
                           setSelectedCategory(category.name);
                           setShowCategoryDropdown(false);
                         }}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer ${
                           selectedCategory === category.name
                             ? "bg-blue-50 text-blue-600"
                             : ""
@@ -404,24 +469,38 @@ const ProductsPage = () => {
             <div className="relative" ref={warrantyDropdownRef}>
               <button
                 onClick={() => setShowWarrantyDropdown(!showWarrantyDropdown)}
-                className="flex items-center justify-between w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:border-blue-500"
+                className={`flex items-center justify-between w-full md:w-48 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
               >
                 <span>{getWarrantyDisplayText()}</span>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
 
               {showWarrantyDropdown && (
-                <ul className="absolute z-10 w-full md:w-48 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                <ul
+                  className={`absolute z-10 w-full md:w-48 mt-1 border border-gray-300 rounded-lg shadow-lg ${
+                    isDarkMode
+                      ? "bg-gray-800/90"
+                      : "bg-white/80 border-gray-200"
+                  }`}
+                >
                   <li>
                     <button
                       onClick={() => {
                         setWarrantyFilter("all");
                         setShowWarrantyDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                      className={`w-full text-left px-4 py-2 cursor-pointer ${
                         warrantyFilter === "all"
                           ? "bg-blue-50 text-blue-600"
                           : ""
+                      } ${
+                        isDarkMode
+                          ? "hover:bg-gray-100 hover:text-black"
+                          : "hover:bg-gray-100 hover:text-black"
                       }`}
                     >
                       All Warranty
@@ -433,7 +512,7 @@ const ProductsPage = () => {
                         setWarrantyFilter("Yes");
                         setShowWarrantyDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                      className={`w-full text-left px-4 py-2 hover:bg-white hover:text-black cursor-pointer ${
                         warrantyFilter === "Yes"
                           ? "bg-blue-50 text-blue-600"
                           : ""
@@ -448,7 +527,7 @@ const ProductsPage = () => {
                         setWarrantyFilter("No");
                         setShowWarrantyDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                      className={`w-full text-left px-4 py-2 hover:bg-white hover:text-black cursor-pointer ${
                         warrantyFilter === "No"
                           ? "bg-blue-50 text-blue-600"
                           : ""
@@ -463,11 +542,23 @@ const ProductsPage = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <button
+                className={`px-4 py-2 border rounded-lg flex items-center gap-2 cursor-none ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <Filter className="w-4 h-4" />
                 Filter
               </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <button
+                className={`px-4 py-2 border rounded-lg flex items-center gap-2 cursor-none ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <Download className="w-4 h-4" />
                 Export
               </button>
@@ -477,37 +568,59 @@ const ProductsPage = () => {
       </div>
 
       {/* Products Table */}
-      <div className="rounded-lg shadow-sm border overflow-hidden">
+      <div
+        className={`rounded-lg shadow-sm border overflow-hidden ${
+          isDarkMode
+            ? "bg-gray-800/50 border-gray-700"
+            : "bg-white/50 border-gray-200"
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b">
+            <thead
+              className={`border-b ${
+                isDarkMode ? "border-gray-600" : "border-gray-200"
+              }`}
+            >
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  ID
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Quantity
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Prices
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Warranty
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody
+              className={`divide-y ${
+                isDarkMode ? "divide-gray-700" : "divide-gray-200"
+              }`}
+            >
               {currentProducts.map((product) => (
                 <tr
                   key={product.id}
                   className="dark:hover:bg-gray-50 hover:bg-gray-300"
                 >
+                  <td className="px-6 py-4 whitespace-nowra text-left">
+                    <span className="inline-flex text-xs font-medium">
+                      {product.id || "nAn"}
+                    </span>
+                  </td>
                   {/* Product Name Cell - Clickable */}
                   <td
                     className="px-6 py-4 whitespace-nowrap cursor-pointer"
@@ -528,42 +641,39 @@ const ProductsPage = () => {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <td className="px-6 py-4 whitespace-nowra text-center">
+                    <span className="inline-flex px-2.5 py-2 rounded-lg text-xs font-medium bg-blue-100 text-blue-800">
                       {product.Categories?.name || "Uncategorized"}
                     </span>
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-gray-400" />
+                  <td className="px-6 py-4 whitespace-nowrap flex-1 text-center">
+                    <div className="gap-2">
                       <span
-                        className={`text-sm font-medium ${
+                        className={`text-sm font-medium p-2 ${
                           product.quantity < 10
                             ? "text-red-500"
-                            : "text-gray-700"
+                            : ""
                         }`}
                       >
                         {product.quantity}
                       </span>
-                      {product.quantity < 10 && (
+                      {/* {product.quantity < 10 && (
                         <span className="text-xs text-red-500">Low Stock</span>
-                      )}
+                      )} */}
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">
-                          {product.retailPrice}{" "}
-                          <span className="text-green-500">&#2547;</span>
-                        </span>
-                      </div>
+                  <td className="px-6 py-4 whitespace-nowrap flex-1 text-center">
+                    <div className="gap-1">
+                      <span className="font-medium">
+                        {product.retailPrice}{" "}
+                        <span className="text-green-500">&#2547;</span>
+                      </span>
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     {product.warranty === "Yes" ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         <CheckCircle className="w-3 h-3" />
@@ -577,8 +687,8 @@ const ProductsPage = () => {
                     )}
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <div className="flex-1 items-center space-x-2">
                       {/* View Button - Navigates to single product page */}
                       <button
                         onClick={() => router.push(`/product/${product.id}`)}
@@ -716,17 +826,49 @@ const ProductsPage = () => {
                         defaultValue={editingProduct?.name || ""}
                       />
                     </div>
-                    <div>
+                    <div className="relative" ref={modalCategoryDropdownRef}>
                       <label className="block text-sm font-medium mb-1">
-                        Serial Number *
+                        Category *
                       </label>
-                      <input
-                        type="text"
-                        name="serial"
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        defaultValue={editingProduct?.serial || ""}
-                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowModalCategoryDropdown(
+                            !showModalCategoryDropdown
+                          )
+                        }
+                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                      >
+                        <span>{selectedCategoryName || "Select Category"}</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+
+                      {showModalCategoryDropdown && (
+                        <ul
+                          className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                            isDarkMode
+                              ? "bg-gray-800/50 border-gray-700"
+                              : "bg-white/50 border-gray-200"
+                          } `}
+                        >
+                          {categories.map((category) => (
+                            <li key={category.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // Set the selected category
+                                  setSelectedCategoryName(category.name);
+                                  setSelectedCategoryId(category.id);
+                                  setShowModalCategoryDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black dark:bg-gray-900"
+                              >
+                                {category.name}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
 
@@ -785,57 +927,17 @@ const ProductsPage = () => {
                         defaultValue={editingProduct?.quantity || ""}
                       />
                     </div>
-                    <div className="relative" ref={modalCategoryDropdownRef}>
+                    <div>
                       <label className="block text-sm font-medium mb-1">
-                        Category *
+                        Serial Number *
                       </label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowModalCategoryDropdown(
-                            !showModalCategoryDropdown
-                          )
-                        }
-                        className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                      >
-                        <span>
-                          {editingProduct?.category_id
-                            ? categories.find(
-                                (cat) => cat.id === editingProduct.category_id
-                              )?.name || "Select Category"
-                            : "Select Category"}
-                        </span>
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
                       <input
-                        type="hidden"
-                        name="category_id"
-                        value={editingProduct?.category_id || ""}
+                        type="text"
+                        name="serial"
                         required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        defaultValue={editingProduct?.serial || ""}
                       />
-
-                      {showModalCategoryDropdown && (
-                        <ul
-                          className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
-                            isDarkMode ? "bg-black" : "bg-white"
-                          } `}
-                        >
-                          {categories.map((category) => (
-                            <li key={category.id}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  // You'll need to handle this selection in your form submission
-                                  setShowModalCategoryDropdown(false);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black dark:bg-gray-900"
-                              >
-                                {category.name}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </div>
                   </div>
 
@@ -864,27 +966,25 @@ const ProductsPage = () => {
                         }
                         className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                       >
-                        <span>{editingProduct?.warranty || "No"}</span>
+                        <span>{selectedWarranty}</span>
                         <ChevronDown className="w-4 h-4" />
                       </button>
-                      <input
-                        type="hidden"
-                        name="warranty"
-                        value={editingProduct?.warranty || "No"}
-                      />
 
                       {showModalWarrantyDropdown && (
                         <ul
                           className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg ${
-                            isDarkMode ? "bg-black" : "bg-white"
+                            isDarkMode
+                              ? "bg-gray-800/50 border-gray-700"
+                              : "bg-white/50 border-gray-200"
                           } `}
                         >
                           <li>
                             <button
                               type="button"
-                              onClick={() =>
-                                setShowModalWarrantyDropdown(false)
-                              }
+                              onClick={() => {
+                                setSelectedWarranty("Yes");
+                                setShowModalWarrantyDropdown(false);
+                              }}
                               className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black"
                             >
                               Yes
@@ -893,9 +993,10 @@ const ProductsPage = () => {
                           <li>
                             <button
                               type="button"
-                              onClick={() =>
-                                setShowModalWarrantyDropdown(false)
-                              }
+                              onClick={() => {
+                                setSelectedWarranty("No");
+                                setShowModalWarrantyDropdown(false);
+                              }}
                               className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black"
                             >
                               No
@@ -922,7 +1023,13 @@ const ProductsPage = () => {
                 <div className="flex justify-end gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      // Reset modal selections
+                      setSelectedCategoryName("");
+                      setSelectedCategoryId(null);
+                      setSelectedWarranty("No");
+                    }}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-black cursor-pointer"
                   >
                     Cancel

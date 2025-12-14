@@ -76,9 +76,15 @@ const SingleProductPage = () => {
 
   // Transaction history queries
   const { data: sales = [] } = useGetProductSalesQuery(parseInt(productId));
-  const { data: exchanges = [] } = useGetProductExchangesQuery(parseInt(productId));
-  const { data: salesReturns = [] } = useGetProductSalesReturnsQuery(parseInt(productId));
-  const { data: purchases = [] } = useGetProductPurchasesQuery(parseInt(productId));
+  const { data: exchanges = [] } = useGetProductExchangesQuery(
+    parseInt(productId)
+  );
+  const { data: salesReturns = [] } = useGetProductSalesReturnsQuery(
+    parseInt(productId)
+  );
+  const { data: purchases = [] } = useGetProductPurchasesQuery(
+    parseInt(productId)
+  );
 
   // Local state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -88,12 +94,20 @@ const SingleProductPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Modal dropdown states
-  const [showModalCategoryDropdown, setShowModalCategoryDropdown] = useState(false);
-  const [showModalWarrantyDropdown, setShowModalWarrantyDropdown] = useState(false);
-  
+  const [showModalCategoryDropdown, setShowModalCategoryDropdown] =
+    useState(false);
+  const [showModalWarrantyDropdown, setShowModalWarrantyDropdown] =
+    useState(false);
+
   // Refs for dropdown closing
   const modalCategoryDropdownRef = useRef<HTMLDivElement>(null);
   const modalWarrantyDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [selectedCategoryName, setSelectedCategoryName] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [selectedWarranty, setSelectedWarranty] = useState<"Yes" | "No">("No");
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -135,6 +149,30 @@ const SingleProductPage = () => {
 
   const handleEdit = () => {
     setEditingProduct(product || null);
+
+    // Initialize modal state with product data
+    if (product) {
+      // Set category data
+      if (product.category_id) {
+        const category = categories.find(
+          (cat) => cat.id === product.category_id
+        );
+        if (category) {
+          setSelectedCategoryName(category.name);
+          setSelectedCategoryId(category.id);
+        } else {
+          setSelectedCategoryName("");
+          setSelectedCategoryId(null);
+        }
+      } else {
+        setSelectedCategoryName("");
+        setSelectedCategoryId(null);
+      }
+
+      // Set warranty
+      setSelectedWarranty(product.warranty as "Yes" | "No");
+    }
+
     setShowEditModal(true);
   };
 
@@ -159,8 +197,8 @@ const SingleProductPage = () => {
         wholesalePrice: parseFloat(formData.get("wholesalePrice") as string),
         retailPrice: parseFloat(formData.get("retailPrice") as string),
         serial: formData.get("serial") as string,
-        warranty: formData.get("warranty") as "Yes" | "No",
-        category_id: parseInt(formData.get("category_id") as string),
+        warranty: selectedWarranty,
+        category_id: selectedCategoryId || undefined,
       };
 
       if (editingProduct) {
@@ -176,6 +214,10 @@ const SingleProductPage = () => {
       setShowEditModal(false);
       setShowAddModal(false);
       setEditingProduct(null);
+      // Reset modal state
+      setSelectedCategoryName("");
+      setSelectedCategoryId(null);
+      setSelectedWarranty("No");
     } catch (error) {
       console.error("Failed to save product:", error);
       alert(
@@ -188,19 +230,43 @@ const SingleProductPage = () => {
 
   const getStockStatus = (quantity: number) => {
     if (quantity === 0) {
-      return { status: "Out of Stock", color: "text-red-500", bg: "bg-red-100" };
+      return {
+        status: "Out of Stock",
+        color: "text-red-500",
+        bg: "bg-red-100",
+      };
     } else if (quantity < 10) {
-      return { status: "Low Stock", color: "text-orange-500", bg: "bg-orange-100" };
+      return {
+        status: "Low Stock",
+        color: "text-orange-500",
+        bg: "bg-orange-100",
+      };
     } else {
-      return { status: "In Stock", color: "text-green-500", bg: "bg-green-100" };
+      return {
+        status: "In Stock",
+        color: "text-green-500",
+        bg: "bg-green-100",
+      };
     }
   };
 
   // Calculate transaction statistics
-  const totalSales = sales.reduce((sum: number, sale: Transaction) => sum + sale.quantity, 0);
-  const totalPurchases = purchases.reduce((sum: number, purchase: Transaction) => sum + purchase.quantity, 0);
-  const totalReturns = salesReturns.reduce((sum: number, ret: Transaction) => sum + ret.quantity, 0);
-  const totalExchanges = exchanges.reduce((sum: number, exchange: Transaction) => sum + exchange.quantity, 0);
+  const totalSales = sales.reduce(
+    (sum: number, sale: Transaction) => sum + sale.quantity,
+    0
+  );
+  const totalPurchases = purchases.reduce(
+    (sum: number, purchase: Transaction) => sum + purchase.quantity,
+    0
+  );
+  const totalReturns = salesReturns.reduce(
+    (sum: number, ret: Transaction) => sum + ret.quantity,
+    0
+  );
+  const totalExchanges = exchanges.reduce(
+    (sum: number, exchange: Transaction) => sum + exchange.quantity,
+    0
+  );
 
   if (isLoading) {
     return (
@@ -249,37 +315,56 @@ const SingleProductPage = () => {
 
   const stockStatus = getStockStatus(product.quantity);
 
-  const renderTransactionTable = (transactions: Transaction[], type: string) => {
+  const renderTransactionTable = (
+    transactions: Transaction[],
+    type: string
+  ) => {
     const getIcon = (type: string) => {
       switch (type) {
-        case "sales": return <TrendingUp className="w-4 h-4 text-green-500" />;
-        case "purchases": return <ShoppingCart className="w-4 h-4 text-blue-500" />;
-        case "returns": return <Undo2 className="w-4 h-4 text-orange-500" />;
-        case "exchanges": return <ArrowLeftRight className="w-4 h-4 text-purple-500" />;
-        default: return <Eye className="w-4 h-4 text-gray-500" />;
+        case "sales":
+          return <TrendingUp className="w-4 h-4 text-green-500" />;
+        case "purchases":
+          return <ShoppingCart className="w-4 h-4 text-blue-500" />;
+        case "returns":
+          return <Undo2 className="w-4 h-4 text-orange-500" />;
+        case "exchanges":
+          return <ArrowLeftRight className="w-4 h-4 text-purple-500" />;
+        default:
+          return <Eye className="w-4 h-4 text-gray-500" />;
       }
     };
 
     const getQuantityIcon = (type: string) => {
       switch (type) {
-        case "sales": return <Minus className="w-3 h-3 text-red-500" />;
-        case "purchases": return <Plus className="w-3 h-3 text-green-500" />;
-        case "returns": return <Plus className="w-3 h-3 text-green-500" />;
-        case "exchanges": return <ArrowLeftRight className="w-3 h-3 text-blue-500" />;
-        default: return <Hash className="w-3 h-3 text-gray-500" />;
+        case "sales":
+          return <Minus className="w-3 h-3 text-red-500" />;
+        case "purchases":
+          return <Plus className="w-3 h-3 text-green-500" />;
+        case "returns":
+          return <Plus className="w-3 h-3 text-green-500" />;
+        case "exchanges":
+          return <ArrowLeftRight className="w-3 h-3 text-blue-500" />;
+        default:
+          return <Hash className="w-3 h-3 text-gray-500" />;
       }
     };
 
     return (
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="border-b">
+          <thead
+            className={`border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-200"
+            }`}
+          >
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Date
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                {type === "sales" || type === "returns" ? "Customer" : "Supplier"}
+                {type === "sales" || type === "returns"
+                  ? "Customer"
+                  : "Supplier"}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Quantity
@@ -317,19 +402,21 @@ const SingleProductPage = () => {
                   ৳{transaction.price}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                  ৳{transaction.total}
+                  ৳{transaction.total.toFixed(2)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-blue-600">
                   {transaction.invoiceNumber || "N/A"}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    transaction.status === "completed" 
-                      ? "bg-green-100 text-green-800"
-                      : transaction.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      transaction.status === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : transaction.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {transaction.status || "Completed"}
                   </span>
                 </td>
@@ -374,17 +461,48 @@ const SingleProductPage = () => {
                     defaultValue={editingProduct?.name || ""}
                   />
                 </div>
-                <div>
+                <div className="relative" ref={modalCategoryDropdownRef}>
                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Serial Number *
+                    Category *
                   </label>
-                  <input
-                    type="text"
-                    name="serial"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    defaultValue={editingProduct?.serial || ""}
-                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowModalCategoryDropdown(!showModalCategoryDropdown)
+                    }
+                    className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <span>{selectedCategoryName || "Select Category"}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+
+                  {showModalCategoryDropdown && (
+                    <ul
+                      className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                        isDarkMode ? "bg-gray-800 text-white" : "bg-white"
+                      }`}
+                    >
+                      {categories.map((category) => (
+                        <li key={category.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategoryName(category.name);
+                              setSelectedCategoryId(category.id);
+                              setShowModalCategoryDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                              isDarkMode
+                                ? "hover:bg-gray-700 hover:text-white"
+                                : ""
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
 
@@ -443,59 +561,17 @@ const SingleProductPage = () => {
                     defaultValue={editingProduct?.quantity || ""}
                   />
                 </div>
-                <div className="relative" ref={modalCategoryDropdownRef}>
+                <div>
                   <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Category *
+                    Serial Number *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowModalCategoryDropdown(!showModalCategoryDropdown)
-                    }
-                    className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <span>
-                      {editingProduct?.category_id
-                        ? categories.find(
-                            (cat) => cat.id === editingProduct.category_id
-                          )?.name || "Select Category"
-                        : "Select Category"}
-                    </span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
                   <input
-                    type="hidden"
-                    name="category_id"
-                    value={editingProduct?.category_id || ""}
+                    type="text"
+                    name="serial"
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    defaultValue={editingProduct?.serial || ""}
                   />
-
-                  {showModalCategoryDropdown && (
-                    <ul
-                      className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
-                        isDarkMode ? "bg-gray-800 text-white" : "bg-white"
-                      }`}
-                    >
-                      {categories.map((category) => (
-                        <li key={category.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // Update the hidden input value
-                              const input = document.querySelector('input[name="category_id"]') as HTMLInputElement;
-                              if (input) input.value = category.id.toString();
-                              setShowModalCategoryDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                              isDarkMode ? "hover:bg-gray-700 hover:text-white" : ""
-                            }`}
-                          >
-                            {category.name}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </div>
 
@@ -522,14 +598,9 @@ const SingleProductPage = () => {
                     }
                     className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <span>{editingProduct?.warranty || "No"}</span>
+                    <span>{selectedWarranty}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
-                  <input
-                    type="hidden"
-                    name="warranty"
-                    value={editingProduct?.warranty || "No"}
-                  />
 
                   {showModalWarrantyDropdown && (
                     <ul
@@ -541,12 +612,13 @@ const SingleProductPage = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const input = document.querySelector('input[name="warranty"]') as HTMLInputElement;
-                            if (input) input.value = "Yes";
+                            setSelectedWarranty("Yes");
                             setShowModalWarrantyDropdown(false);
                           }}
                           className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                            isDarkMode ? "hover:bg-gray-700 hover:text-white" : ""
+                            isDarkMode
+                              ? "hover:bg-gray-700 hover:text-white"
+                              : ""
                           }`}
                         >
                           Yes
@@ -556,12 +628,13 @@ const SingleProductPage = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const input = document.querySelector('input[name="warranty"]') as HTMLInputElement;
-                            if (input) input.value = "No";
+                            setSelectedWarranty("No");
                             setShowModalWarrantyDropdown(false);
                           }}
                           className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                            isDarkMode ? "hover:bg-gray-700 hover:text-white" : ""
+                            isDarkMode
+                              ? "hover:bg-gray-700 hover:text-white"
+                              : ""
                           }`}
                         >
                           No
@@ -592,6 +665,10 @@ const SingleProductPage = () => {
                   setShowEditModal(false);
                   setShowAddModal(false);
                   setEditingProduct(null);
+                  // Reset modal state
+                  setSelectedCategoryName("");
+                  setSelectedCategoryId(null);
+                  setSelectedWarranty("No");
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white cursor-pointer"
               >
@@ -612,7 +689,11 @@ const SingleProductPage = () => {
 
   return (
     <div
-      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}
+      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
+        isDarkMode
+          ? "bg-gray-800/50 border-gray-700"
+          : "bg-white/50 border-gray-200"
+      }`}
     >
       {/* Header */}
       <div className="mb-6">
@@ -620,16 +701,19 @@ const SingleProductPage = () => {
           <button
             onClick={() => router.push("/product")}
             className={`p-2 rounded-lg transition-colors ${
-              isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+              isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
             }`}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 cursor-pointer" />
           </button>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Package className="w-6 h-6" />
               {product.name}
             </h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">
+              ID: {product.id}
+            </p>
             <p className="mt-1 text-gray-600 dark:text-gray-400">
               Serial: {product.serial}
             </p>
@@ -672,7 +756,11 @@ const SingleProductPage = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="mb-6 border-b dark:border-gray-700">
+      <div
+        className={`mb-6 border-b ${
+          isDarkMode ? "border-gray-700" : "border-gray-200"
+        }`}
+      >
         <nav className="flex space-x-8">
           {[
             { id: "overview", name: "Overview", icon: Package },
@@ -686,7 +774,7 @@ const SingleProductPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer ${
                   activeTab === tab.id
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -704,39 +792,55 @@ const SingleProductPage = () => {
       {activeTab === "overview" && (
         <>
           {/* Product Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 grid-rows-3 gap-6 mb-6">
             {/* Main Product Information */}
-            <div className="lg:col-span-2">
-              <div className="rounded-lg shadow-sm border overflow-hidden">
-                <div className="p-6">
+            <div className="col-span-2 row-span-3">
+              <div
+                className={`rounded-lg shadow-sm border overflow-hidden h-full ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
+                <div className="p-4">
                   <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                     <Package className="w-5 h-5" />
                     Product Information
                   </h2>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
-                          Product Name
-                        </label>
-                        <p className="text-lg font-semibold dark:text-white">{product.name}</p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
-                          Serial Number
-                        </label>
-                        <p className="text-lg font-mono dark:text-white">{product.serial}</p>
-                      </div>
-                    </div>
 
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Product Id
+                      </label>
+                      <p className="text-lg font-semibold dark:text-white">
+                        {product.id}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Product Name
+                      </label>
+                      <p className="text-lg font-semibold dark:text-white">
+                        {product.name}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Serial Number
+                      </label>
+                      <p className="text-lg font-mono dark:text-white">
+                        {product.serial}
+                      </p>
+                    </div>
                     {product.specification && (
                       <div>
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                           Specification
                         </label>
-                        <p className="text-lg dark:text-white">{product.specification}</p>
+                        <p className="text-lg dark:text-white">
+                          {product.specification}
+                        </p>
                       </div>
                     )}
 
@@ -745,18 +849,42 @@ const SingleProductPage = () => {
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                           Description
                         </label>
-                        <p className="text-lg dark:text-white">{product.description}</p>
+                        <p className="text-lg dark:text-white">
+                          {product.description}
+                        </p>
                       </div>
                     )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Stock
+                      </label>
+                      <p className="text-lg font-mono dark:text-white">
+                        {product.quantity} units
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Serial Number
+                      </label>
+                      <p className="text-lg font-mono dark:text-white">
+                        {product.serial}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Sidebar Information */}
-            <div className="space-y-6">
+            <div className="space-y-6 col-span-1 row-span-3">
               {/* Transaction Statistics */}
-              <div className="rounded-lg shadow-sm border p-6">
+              <div
+                className={`rounded-lg shadow-sm border p-6 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
                   <FileText className="w-5 h-5" />
                   Transaction Summary
@@ -767,48 +895,66 @@ const SingleProductPage = () => {
                       <TrendingUp className="w-4 h-4 text-green-500" />
                       Total Sold
                     </span>
-                    <span className="font-semibold dark:text-white">{totalSales} units</span>
+                    <span className="font-semibold dark:text-white">
+                      {totalSales} units
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                       <ShoppingCart className="w-4 h-4 text-blue-500" />
                       Total Purchased
                     </span>
-                    <span className="font-semibold dark:text-white">{totalPurchases} units</span>
+                    <span className="font-semibold dark:text-white">
+                      {totalPurchases} units
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                       <Undo2 className="w-4 h-4 text-orange-500" />
                       Total Returns
                     </span>
-                    <span className="font-semibold dark:text-white">{totalReturns} units</span>
+                    <span className="font-semibold dark:text-white">
+                      {totalReturns} units
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
                       <ArrowLeftRight className="w-4 h-4 text-purple-500" />
                       Total Exchanges
                     </span>
-                    <span className="font-semibold dark:text-white">{totalExchanges} units</span>
+                    <span className="font-semibold dark:text-white">
+                      {totalExchanges} units
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Stock Information */}
-              <div className="rounded-lg shadow-sm border p-6">
+              <div
+                className={`rounded-lg shadow-sm border p-6 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
                   <Warehouse className="w-5 h-5" />
                   Stock Information
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Current Quantity</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Current Quantity
+                    </span>
                     <span className="text-2xl font-bold flex items-center gap-2 dark:text-white">
                       <Hash className="w-5 h-5 text-gray-400" />
                       {product.quantity}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Status</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Status
+                    </span>
                     <span className={`font-semibold ${stockStatus.color}`}>
                       {stockStatus.status}
                     </span>
@@ -817,20 +963,30 @@ const SingleProductPage = () => {
               </div>
 
               {/* Category & Warranty */}
-              <div className="rounded-lg shadow-sm border p-6">
+              <div
+                className={`rounded-lg shadow-sm border p-6 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
                   <Tag className="w-5 h-5" />
                   Classification
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Category</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Category
+                    </span>
                     <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
                       {product.Categories?.name || "Uncategorized"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Warranty</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Warranty
+                    </span>
                     {product.warranty === "Yes" ? (
                       <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
                         <CheckCircle className="w-4 h-4" />
@@ -849,47 +1005,63 @@ const SingleProductPage = () => {
           </div>
 
           {/* Pricing Information */}
-          <div className="rounded-lg shadow-sm border mb-6">
+          <div
+            className={`rounded-lg shadow-sm border mb-6 ${
+              isDarkMode
+                ? "bg-gray-800/50 border-gray-700"
+                : "bg-white/50 border-gray-200"
+            }`}
+          >
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <DollarSign className="w-5 h-5" />
                 Pricing Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className={`text-center p-4 border rounded-lg ${
-                  isDarkMode ? 'border-gray-700' : ''
-                }`}>
+                <div
+                  className={`text-center p-4 border rounded-lg ${
+                    isDarkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
                   <label className="block text-sm font-medium mb-2">
                     Purchase Price
                   </label>
-                  <p className="text-2xl font-bold">
-                    ৳{product.purchasePrice}
+                  <p className="text-2xl font-bold">৳{product.purchasePrice}</p>
+                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    Cost Price
                   </p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">Cost Price</p>
                 </div>
-                
-                <div className={`text-center p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 ${
-                  isDarkMode ? 'border-gray-700' : ''
-                }`}>
+
+                <div
+                  className={`text-center p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 ${
+                    isDarkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
                   <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
                     Wholesale Price
                   </label>
                   <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                     ৳{product.wholesalePrice}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">Bulk Selling Price</p>
+                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    Bulk Selling Price
+                  </p>
                 </div>
-                
-                <div className={`text-center p-4 border rounded-lg bg-green-50 dark:bg-green-900/20 ${
-                  isDarkMode ? 'border-gray-700' : ''
-                }`}>
+
+                <div
+                  className={`text-center p-4 border rounded-lg bg-green-50 dark:bg-green-900/20 ${
+                    isDarkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
                   <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
                     Retail Price
                   </label>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-300">
                     ৳{product.retailPrice}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">Customer Price</p>
+                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                    Customer Price
+                  </p>
                 </div>
               </div>
             </div>
@@ -899,9 +1071,13 @@ const SingleProductPage = () => {
 
       {/* Sales Tab */}
       {activeTab === "sales" && (
-        <div className={`rounded-lg shadow-sm border ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : ''
-        }`}>
+        <div
+          className={`rounded-lg shadow-sm border ${
+            isDarkMode
+              ? "bg-gray-800/50 border-gray-700"
+              : "bg-white/50 border-gray-200"
+          }`}
+        >
           <div className="p-6">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
               <TrendingUp className="w-5 h-5" />
@@ -914,9 +1090,13 @@ const SingleProductPage = () => {
 
       {/* Purchases Tab */}
       {activeTab === "purchases" && (
-        <div className={`rounded-lg shadow-sm border ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : ''
-        }`}>
+        <div
+          className={`rounded-lg shadow-sm border ${
+            isDarkMode
+              ? "bg-gray-800/50 border-gray-700"
+              : "bg-white/50 border-gray-200"
+          }`}
+        >
           <div className="p-6">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
               <ShoppingCart className="w-5 h-5" />
@@ -929,9 +1109,13 @@ const SingleProductPage = () => {
 
       {/* Sales Returns Tab */}
       {activeTab === "returns" && (
-        <div className={`rounded-lg shadow-sm border ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : ''
-        }`}>
+        <div
+          className={`rounded-lg shadow-sm border ${
+            isDarkMode
+              ? "bg-gray-800/50 border-gray-700"
+              : "bg-white/50 border-gray-200"
+          }`}
+        >
           <div className="p-6">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
               <Undo2 className="w-5 h-5" />
@@ -944,9 +1128,13 @@ const SingleProductPage = () => {
 
       {/* Exchanges Tab */}
       {activeTab === "exchanges" && (
-        <div className={`rounded-lg shadow-sm border ${
-          isDarkMode ? 'bg-gray-800 border-gray-700' : ''
-        }`}>
+        <div
+          className={`rounded-lg shadow-sm border ${
+            isDarkMode
+              ? "bg-gray-800/50 border-gray-700"
+              : "bg-white/50 border-gray-200"
+          }`}
+        >
           <div className="p-6">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
               <ArrowLeftRight className="w-5 h-5" />
@@ -960,19 +1148,25 @@ const SingleProductPage = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`rounded-lg border max-w-md w-full ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'}`}>
+          <div
+            className={`rounded-lg border max-w-md w-full ${
+              isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+            }`}
+          >
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900/20">
                   <Trash2 className="w-6 h-6 text-red-500" />
                 </div>
-                <h3 className="text-lg font-bold dark:text-white">Delete Product</h3>
+                <h3 className="text-lg font-bold dark:text-white">
+                  Delete Product
+                </h3>
               </div>
-              
+
               <p className="text-gray-600 mb-6 dark:text-gray-400">
-                Are you sure you want to delete <strong>{product.name}</strong>? 
-                This action cannot be undone and will permanently remove the product 
-                from your inventory.
+                Are you sure you want to delete <strong>{product.name}</strong>?
+                This action cannot be undone and will permanently remove the
+                product from your inventory.
               </p>
 
               <div className="flex justify-end gap-3">
@@ -995,7 +1189,9 @@ const SingleProductPage = () => {
       )}
 
       {/* Edit Product Modal */}
-      {(showEditModal || showAddModal) && editingProduct && <EditProductModal />}
+      {(showEditModal || showAddModal) && editingProduct && (
+        <EditProductModal />
+      )}
     </div>
   );
 };
