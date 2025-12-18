@@ -9,19 +9,46 @@ export interface Product {
   purchasePrice: number;
   wholesalePrice: number;
   retailPrice: number;
-  serial: string;
+  serial?: string; // Bulk serial (optional)
   warranty: "Yes" | "No";
   category_id: number;
+  useIndividualSerials: boolean;
   Categories?: {
     id: number;
     name: string;
   };
+  productSerials?: ProductSerial[];
+}
+export interface ProductSerial {
+  warranty: string;
+  id: number;
+  serial: string;
+  product_id: number;
+  status: "Available" | "Sold" | "Returned" | "Unavailable" | "InService" | "Exchanged";
+  sale_id?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface CreateProductRequest {
+  name: string;
+  specification?: string;
+  description?: string;
+  quantity: number;
+  purchasePrice: number;
+  wholesalePrice: number;
+  retailPrice: number;
+  warranty: "Yes" | "No";
+  category_id: number;
+  useIndividualSerials: boolean;
+  bulkSerial?: string; // For non-serialized products
+  individualSerials?: string[]; // Array of serials for serialized products
 }
 export interface Category {
   id: number;
   name: string;
 }
 export interface SaleSummary {
+  created_at: string;
   id: number;
   totalAmount: number;
   totalPaid: number;
@@ -117,6 +144,7 @@ export interface SalesReturn {
   updated_at: string;
 }
 export interface PurchaseSummary {
+  created_at: string;
   id: number;
   totalAmount: number;
   totalPaid: number;
@@ -214,6 +242,7 @@ export interface PurchaseReturn {
   updated_at: string;
 }
 export interface ExchangeSummary {
+  created_at: string;
   id: number;
   totalPaid: number;
   totalPayback: number;
@@ -380,7 +409,7 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://fit-uzbea-backend.vercel.app/api" || "/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json");
       const token =

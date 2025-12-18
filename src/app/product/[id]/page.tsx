@@ -24,6 +24,10 @@ import {
   Minus,
   Eye,
   ChevronDown,
+  Shield,
+  ShieldCheck,
+  ShieldX,
+  AlertCircle, // Added AlertCircle
 } from "lucide-react";
 import {
   useGetProductQuery,
@@ -35,7 +39,6 @@ import {
   useGetProductPurchasesQuery,
   useGetCategoriesQuery,
   useUpdateProductMutation,
-  useCreateProductMutation,
 } from "@/state/api";
 
 // Define the Transaction interface
@@ -49,6 +52,13 @@ interface Transaction {
   supplier?: string;
   invoiceNumber?: string;
   status?: string;
+}
+
+// Define Individual Serial interface
+interface IndividualSerial {
+  id?: number;
+  serial: string;
+  warranty: string;
 }
 
 const SingleProductPage = () => {
@@ -71,7 +81,6 @@ const SingleProductPage = () => {
   } = useGetProductQuery(parseInt(productId));
   const [deleteProduct] = useDeleteProductMutation();
   const [updateProduct] = useUpdateProductMutation();
-  const [createProduct] = useCreateProductMutation();
   const { data: categories = [] } = useGetCategoriesQuery();
 
   // Transaction history queries
@@ -89,25 +98,32 @@ const SingleProductPage = () => {
   // Local state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Modal dropdown states
+  // Modal state for edit
   const [showModalCategoryDropdown, setShowModalCategoryDropdown] =
     useState(false);
-  const [showModalWarrantyDropdown, setShowModalWarrantyDropdown] =
-    useState(false);
-
-  // Refs for dropdown closing
-  const modalCategoryDropdownRef = useRef<HTMLDivElement>(null);
-  const modalWarrantyDropdownRef = useRef<HTMLDivElement>(null);
-
   const [selectedCategoryName, setSelectedCategoryName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
-  const [selectedWarranty, setSelectedWarranty] = useState<"Yes" | "No">("No");
+  const [useIndividualSerials, setUseIndividualSerials] = useState(false);
+  const [individualSerials, setIndividualSerials] = useState<
+    IndividualSerial[]
+  >([]);
+  const [showBulkWarrantyDropdown, setShowBulkWarrantyDropdown] =
+    useState(false);
+
+  // Alert Modal State
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error" | "info">(
+    "info"
+  );
+
+  // Refs for dropdown closing
+  const modalCategoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -118,88 +134,97 @@ const SingleProductPage = () => {
       ) {
         setShowModalCategoryDropdown(false);
       }
-      if (
-        modalWarrantyDropdownRef.current &&
-        !modalWarrantyDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowModalWarrantyDropdown(false);
-      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Calculate content margin based on sidebar and POS panel states
-  const getContentMargin = () => {
-    let margin = "ml-0 ";
-
-    if (!isSidebarCollapsed) {
-      // margin += "md:ml-64 ";
-    } else {
-      // margin += "md:ml-16 ";
-    }
-
-    if (isPOSPanelOpen) {
-      // margin += "md:mr-80";
-    }
-
-    return margin.trim();
+  // Helper function to show alerts
+  const showAlert = (message: string, type: "success" | "error" | "info" = "info") => {
+    setAlertMessage(message);
+    setAlertType(type);
+    setShowAlertModal(true);
   };
 
-  const handleEdit = () => {
-    setEditingProduct(product || null);
+  // Initialize edit modal data
+  const initializeEditModal = (product: Product) => {
+    setEditingProduct(product);
 
-    // Initialize modal state with product data
-    if (product) {
-      // Set category data
-      if (product.category_id) {
-        const category = categories.find(
-          (cat) => cat.id === product.category_id
-        );
-        if (category) {
-          setSelectedCategoryName(category.name);
-          setSelectedCategoryId(category.id);
-        } else {
-          setSelectedCategoryName("");
-          setSelectedCategoryId(null);
-        }
+    // Set category data
+    if (product.category_id) {
+      const category = categories.find((cat) => cat.id === product.category_id);
+      if (category) {
+        setSelectedCategoryName(category.name);
+        setSelectedCategoryId(category.id);
       } else {
         setSelectedCategoryName("");
         setSelectedCategoryId(null);
       }
+    } else {
+      setSelectedCategoryName("");
+      setSelectedCategoryId(null);
+    }
 
-      // Set warranty
-      setSelectedWarranty(product.warranty as "Yes" | "No");
+    // Set individual serial tracking
+    setUseIndividualSerials(product.useIndividualSerials || false);
+
+    // Set individual serials if product has them
+    if (product.useIndividualSerials && product.productSerials) {
+      const serials: IndividualSerial[] = product.productSerials.map((ps) => ({
+        id: ps.id,
+        serial: ps.serial || "",
+        warranty: ps.warranty || "No",
+      }));
+      setIndividualSerials(serials);
+    } else {
+      setIndividualSerials([]);
     }
 
     setShowEditModal(true);
   };
 
+  const handleEdit = () => {
+    if (product) {
+      initializeEditModal(product);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteProduct(parseInt(productId)).unwrap();
-      router.push("/product");
+      showAlert("Product deleted successfully!", "success");
+      setTimeout(() => {
+        router.push("/product");
+      }, 1500);
     } catch (error) {
       console.error("Failed to delete product:", error);
-      alert("Failed to delete product. Please try again.");
+      showAlert("Failed to delete product. Please try again.", "error");
     }
   };
 
   const handleSaveProduct = async (formData: FormData) => {
     try {
-      const productData = {
+      const productData: any = {
         name: formData.get("name") as string,
         specification: (formData.get("specification") as string) || null,
         description: (formData.get("description") as string) || null,
-        quantity: parseInt(formData.get("quantity") as string),
+        quantity: parseInt(formData.get("quantity") as string) || 1,
         purchasePrice: parseFloat(formData.get("purchasePrice") as string),
         wholesalePrice: parseFloat(formData.get("wholesalePrice") as string),
         retailPrice: parseFloat(formData.get("retailPrice") as string),
-        serial: formData.get("serial") as string,
-        warranty: selectedWarranty,
+        useIndividualSerials,
         category_id: selectedCategoryId || undefined,
       };
+
+      // Handle serial numbers based on tracking type
+      if (useIndividualSerials) {
+        // Send individualSerials as array of objects with serial and warranty
+        productData.individualSerials = individualSerials.map((s) => ({
+          serial: s.serial || "",
+          warranty: s.warranty || "No",
+        }));
+      }
 
       if (editingProduct) {
         await updateProduct({
@@ -207,24 +232,23 @@ const SingleProductPage = () => {
           product: productData,
         }).unwrap();
         refetch(); // Refresh product data
-      } else {
-        await createProduct(productData).unwrap();
       }
 
       setShowEditModal(false);
-      setShowAddModal(false);
       setEditingProduct(null);
-      // Reset modal state
       setSelectedCategoryName("");
       setSelectedCategoryId(null);
-      setSelectedWarranty("No");
-    } catch (error) {
-      console.error("Failed to save product:", error);
-      alert(
-        `Failed to ${
-          editingProduct ? "update" : "add"
-        } product. Please try again.`
-      );
+      setUseIndividualSerials(false);
+      setIndividualSerials([]);
+
+      showAlert("Product updated successfully!", "success");
+    } catch (error: any) {
+      console.error("Failed to update product:", error);
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to update product. Please try again.";
+      showAlert(errorMessage, "error");
     }
   };
 
@@ -267,6 +291,23 @@ const SingleProductPage = () => {
     (sum: number, exchange: Transaction) => sum + exchange.quantity,
     0
   );
+  
+  // Helper function to calculate content margin
+  const getContentMargin = () => {
+    let margin = "ml-0 ";
+
+    if (!isSidebarCollapsed) {
+      // margin += "md:ml-64 ";
+    } else {
+      // margin += "md:ml-16 ";
+    }
+
+    if (isPOSPanelOpen) {
+      // margin += "md:mr-80";
+    }
+
+    return margin.trim();
+  };
 
   if (isLoading) {
     return (
@@ -433,13 +474,23 @@ const SingleProductPage = () => {
     );
   };
 
-  // Edit Product Modal (identical to Products Page)
+  // Edit Product Modal (matching the ProductsPage modal)
   const EditProductModal = () => (
     <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="rounded-lg border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className={`rounded-lg border max-w-4xl w-full max-h-[90vh] overflow-y-auto ${
+          isDarkMode
+            ? "bg-gray-800 border-gray-700"
+            : "bg-white border-gray-200"
+        }`}
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">
-            {editingProduct ? "Edit Product" : "Add New Product"}
+          <h2
+            className={`text-xl font-bold mb-4 ${
+              isDarkMode ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Edit Product
           </h2>
           <form
             onSubmit={(e) => {
@@ -448,21 +499,34 @@ const SingleProductPage = () => {
             }}
           >
             <div className="space-y-4">
+              {/* Basic Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Product Name *
                   </label>
                   <input
                     type="text"
                     name="name"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                     defaultValue={editingProduct?.name || ""}
                   />
                 </div>
                 <div className="relative" ref={modalCategoryDropdownRef}>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Category *
                   </label>
                   <button
@@ -470,7 +534,11 @@ const SingleProductPage = () => {
                     onClick={() =>
                       setShowModalCategoryDropdown(!showModalCategoryDropdown)
                     }
-                    className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                   >
                     <span>{selectedCategoryName || "Select Category"}</span>
                     <ChevronDown className="w-4 h-4" />
@@ -478,8 +546,10 @@ const SingleProductPage = () => {
 
                   {showModalCategoryDropdown && (
                     <ul
-                      className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${
-                        isDarkMode ? "bg-gray-800 text-white" : "bg-white"
+                      className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                        isDarkMode
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-white border-gray-200"
                       }`}
                     >
                       {categories.map((category) => (
@@ -491,10 +561,10 @@ const SingleProductPage = () => {
                               setSelectedCategoryId(category.id);
                               setShowModalCategoryDropdown(false);
                             }}
-                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                            className={`w-full text-left px-3 py-2 ${
                               isDarkMode
-                                ? "hover:bg-gray-700 hover:text-white"
-                                : ""
+                                ? "hover:bg-gray-700 text-white"
+                                : "hover:bg-gray-100 text-gray-900"
                             }`}
                           >
                             {category.name}
@@ -506,9 +576,14 @@ const SingleProductPage = () => {
                 </div>
               </div>
 
+              {/* Prices */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Purchase Price *
                   </label>
                   <input
@@ -516,12 +591,21 @@ const SingleProductPage = () => {
                     step="0.01"
                     name="purchasePrice"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                     defaultValue={editingProduct?.purchasePrice || ""}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Wholesale Price *
                   </label>
                   <input
@@ -529,12 +613,21 @@ const SingleProductPage = () => {
                     step="0.01"
                     name="wholesalePrice"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                     defaultValue={editingProduct?.wholesalePrice || ""}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Retail Price *
                   </label>
                   <input
@@ -542,117 +635,337 @@ const SingleProductPage = () => {
                     step="0.01"
                     name="retailPrice"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                     defaultValue={editingProduct?.retailPrice || ""}
                   />
                 </div>
               </div>
 
+              {/* Quantity and Individual Serial Toggle */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Quantity *
                   </label>
                   <input
                     type="number"
                     name="quantity"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    defaultValue={editingProduct?.quantity || ""}
+                    min="1"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                    defaultValue={editingProduct?.quantity || 1}
+                    onChange={(e) => {
+                      const qty = parseInt(e.target.value) || 1;
+                      if (qty > 0 && useIndividualSerials) {
+                        const newSerials = Array.from(
+                          { length: qty },
+                          (_, i) => ({
+                            id: individualSerials[i]?.id,
+                            serial: individualSerials[i]?.serial || "",
+                            warranty: individualSerials[i]?.warranty || "No",
+                          })
+                        );
+                        setIndividualSerials(newSerials);
+                      }
+                    }}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Serial Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="serial"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    defaultValue={editingProduct?.serial || ""}
-                  />
+                <div className="flex flex-col justify-end">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="useIndividualSerials"
+                      checked={useIndividualSerials}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setUseIndividualSerials(checked);
+
+                        // Initialize serials array if checked
+                        if (checked) {
+                          const quantity =
+                            parseInt(
+                              (
+                                document.querySelector(
+                                  'input[name="quantity"]'
+                                ) as HTMLInputElement
+                              )?.value
+                            ) ||
+                            editingProduct?.quantity ||
+                            1;
+                          const newSerials = Array.from(
+                            { length: quantity },
+                            (_, i) => ({
+                              id: individualSerials[i]?.id,
+                              serial: individualSerials[i]?.serial || "",
+                              warranty: individualSerials[i]?.warranty || "No",
+                            })
+                          );
+                          setIndividualSerials(newSerials);
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <label
+                      className={`text-sm ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Track each item individually with serial numbers
+                    </label>
+                  </div>
                 </div>
               </div>
 
+              {/* Individual Serial Numbers Section */}
+              {useIndividualSerials && (
+                <div
+                  className={`mt-4 p-4 border rounded-lg ${
+                    isDarkMode ? "border-gray-700" : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3
+                      className={`font-medium ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      Individual Serial Numbers ({individualSerials.length}{" "}
+                      items)
+                    </h3>
+                    <div className="flex gap-2">
+                      {/* Bulk Actions */}
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowBulkWarrantyDropdown(
+                              !showBulkWarrantyDropdown
+                            )
+                          }
+                          className={`flex items-center gap-2 px-3 py-1 border rounded-lg text-sm ${
+                            isDarkMode
+                              ? "border-gray-600 bg-gray-700 text-white"
+                              : "border-gray-300 bg-white text-gray-900"
+                          }`}
+                        >
+                          Bulk Actions
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {showBulkWarrantyDropdown && (
+                          <div
+                            className={`absolute right-0 mt-1 border rounded-lg shadow-lg z-10 ${
+                              isDarkMode
+                                ? "bg-gray-800 border-gray-700"
+                                : "bg-white border-gray-200"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSerials = individualSerials.map(
+                                  (s) => ({
+                                    ...s,
+                                    warranty: "Yes",
+                                  })
+                                );
+                                setIndividualSerials(newSerials);
+                                setShowBulkWarrantyDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 ${
+                                isDarkMode
+                                  ? "hover:bg-gray-700 text-white"
+                                  : "hover:bg-gray-100 text-gray-900"
+                              }`}
+                            >
+                              Set All Warranty to "Yes"
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSerials = individualSerials.map(
+                                  (s) => ({
+                                    ...s,
+                                    warranty: "No",
+                                  })
+                                );
+                                setIndividualSerials(newSerials);
+                                setShowBulkWarrantyDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 ${
+                                isDarkMode
+                                  ? "hover:bg-gray-700 text-white"
+                                  : "hover:bg-gray-100 text-gray-900"
+                              }`}
+                            >
+                              Set All Warranty to "No"
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newSerials = individualSerials.map(
+                                  (s) => ({
+                                    ...s,
+                                    serial: "",
+                                  })
+                                );
+                                setIndividualSerials(newSerials);
+                                setShowBulkWarrantyDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 ${
+                                isDarkMode
+                                  ? "hover:bg-gray-700 text-white"
+                                  : "hover:bg-gray-100 text-gray-900"
+                              }`}
+                            >
+                              Clear All Serials
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto p-2">
+                    {individualSerials.map((serial, index) => (
+                      <div
+                        key={serial.id || index}
+                        className={`border rounded-lg p-3 ${
+                          isDarkMode
+                            ? "border-gray-700 bg-gray-800"
+                            : "border-gray-200 bg-gray-50"
+                        }`}
+                      >
+                        <div
+                          className={`text-sm font-medium mb-2 ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          Item #{index + 1}
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <label
+                              className={`text-xs mb-1 block ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              Serial Number
+                            </label>
+                            <input
+                              type="text"
+                              value={serial.serial}
+                              onChange={(e) => {
+                                const newSerials = [...individualSerials];
+                                newSerials[index].serial = e.target.value;
+                                setIndividualSerials(newSerials);
+                              }}
+                              className={`w-full px-2 py-1 border rounded text-sm ${
+                                isDarkMode
+                                  ? "bg-gray-700 border-gray-600 text-white"
+                                  : "bg-white border-gray-300 text-gray-900"
+                              }`}
+                              placeholder="Optional"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              className={`text-xs mb-1 block ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              Warranty
+                            </label>
+                            <select
+                              value={serial.warranty}
+                              onChange={(e) => {
+                                const newSerials = [...individualSerials];
+                                newSerials[index].warranty = e.target.value;
+                                setIndividualSerials(newSerials);
+                              }}
+                              className={`w-full px-2 py-1 border rounded text-sm ${
+                                isDarkMode
+                                  ? "bg-gray-700 border-gray-600 text-white"
+                                  : "bg-white border-gray-300 text-gray-900"
+                              }`}
+                            >
+                              <option value="Yes">Yes</option>
+                              <option value="No">No</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div
+                    className={`mt-3 text-sm ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    <p>✓ Serial numbers can be left blank (optional)</p>
+                    <p>✓ Warranty status can be set individually or in bulk</p>
+                    <p>
+                      ✓{" "}
+                      {individualSerials.filter((s) => s.serial.trim()).length}{" "}
+                      out of {individualSerials.length} items have serial
+                      numbers
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Specification and Description */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Specification
                   </label>
                   <input
                     type="text"
                     name="specification"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
                     defaultValue={editingProduct?.specification || ""}
                   />
-                </div>
-                <div className="relative" ref={modalWarrantyDropdownRef}>
-                  <label className="block text-sm font-medium mb-1 dark:text-gray-300">
-                    Warranty
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowModalWarrantyDropdown(!showModalWarrantyDropdown)
-                    }
-                    className="flex items-center justify-between w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <span>{selectedWarranty}</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-
-                  {showModalWarrantyDropdown && (
-                    <ul
-                      className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg ${
-                        isDarkMode ? "bg-gray-800 text-white" : "bg-white"
-                      }`}
-                    >
-                      <li>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedWarranty("Yes");
-                            setShowModalWarrantyDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                            isDarkMode
-                              ? "hover:bg-gray-700 hover:text-white"
-                              : ""
-                          }`}
-                        >
-                          Yes
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedWarranty("No");
-                            setShowModalWarrantyDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${
-                            isDarkMode
-                              ? "hover:bg-gray-700 hover:text-white"
-                              : ""
-                          }`}
-                        >
-                          No
-                        </button>
-                      </li>
-                    </ul>
-                  )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   Description
                 </label>
                 <textarea
                   name="description"
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
                   defaultValue={editingProduct?.description || ""}
                 />
               </div>
@@ -663,14 +976,16 @@ const SingleProductPage = () => {
                 type="button"
                 onClick={() => {
                   setShowEditModal(false);
-                  setShowAddModal(false);
-                  setEditingProduct(null);
-                  // Reset modal state
                   setSelectedCategoryName("");
                   setSelectedCategoryId(null);
-                  setSelectedWarranty("No");
+                  setUseIndividualSerials(false);
+                  setIndividualSerials([]);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white cursor-pointer"
+                className={`px-4 py-2 border rounded-lg hover:bg-gray-50 cursor-pointer ${
+                  isDarkMode
+                    ? "border-gray-600 text-white hover:bg-gray-700"
+                    : "border-gray-300 text-gray-900 hover:bg-gray-100"
+                }`}
               >
                 Cancel
               </button>
@@ -678,7 +993,7 @@ const SingleProductPage = () => {
                 type="submit"
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 cursor-pointer"
               >
-                {editingProduct ? "Update" : "Add"} Product
+                Update Product
               </button>
             </div>
           </form>
@@ -714,9 +1029,6 @@ const SingleProductPage = () => {
             <p className="mt-1 text-gray-600 dark:text-gray-400">
               ID: {product.id}
             </p>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              Serial: {product.serial}
-            </p>
           </div>
         </div>
 
@@ -729,10 +1041,18 @@ const SingleProductPage = () => {
               {product.quantity < 10 && <AlertTriangle className="w-4 h-4" />}
               {stockStatus.status}
             </span>
-            {product.warranty === "Yes" && (
+            {product.useIndividualSerials && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                 <CheckCircle className="w-4 h-4" />
-                Under Warranty
+                {product.useIndividualSerials ? (
+                  <>
+                    {product.productSerials?.filter((s) => s.warranty === "Yes")
+                      .length || 0}
+                    /{product.quantity} under warranty
+                  </>
+                ) : (
+                  "All under warranty"
+                )}
               </span>
             )}
           </div>
@@ -825,14 +1145,7 @@ const SingleProductPage = () => {
                         {product.name}
                       </p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
-                        Serial Number
-                      </label>
-                      <p className="text-lg font-mono dark:text-white">
-                        {product.serial}
-                      </p>
-                    </div>
+
                     {product.specification && (
                       <div>
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
@@ -862,13 +1175,95 @@ const SingleProductPage = () => {
                         {product.quantity} units
                       </p>
                     </div>
+                    {/* Serial Numbers Section */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
-                        Serial Number
+                      <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
+                        {product.useIndividualSerials
+                          ? "Serial Numbers"
+                          : "Serial Number"}
                       </label>
-                      <p className="text-lg font-mono dark:text-white">
-                        {product.serial}
-                      </p>
+
+                      {product.useIndividualSerials ? (
+                        <div className="space-y-2">
+                          {product.productSerials &&
+                          product.productSerials.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {product.productSerials.map((serial, index) => (
+                                <div
+                                  key={serial.id}
+                                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-mono ${
+                                    serial.status === "Available"
+                                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                      : serial.status === "Sold"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                      : serial.status === "Returned"
+                                      ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                  }`}
+                                >
+                                  {serial.warranty === "Yes" && (
+                                    <ShieldCheck className="size-4" />
+                                  )}
+                                  {serial.warranty === "No" && (
+                                    <ShieldX className="size-4" />
+                                  )}
+                                  {serial.serial}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 dark:text-gray-400 italic">
+                              No serial numbers registered
+                            </p>
+                          )}
+
+                          {/* Summary */}
+                          {product.productSerials &&
+                            product.productSerials.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <div className="flex flex-wrap gap-4 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Available:{" "}
+                                      {
+                                        product.productSerials.filter(
+                                          (s) => s.status === "Available"
+                                        ).length
+                                      }
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Sold:{" "}
+                                      {
+                                        product.productSerials.filter(
+                                          (s) => s.status === "Sold"
+                                        ).length
+                                      }
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                                    <span className="text-gray-600 dark:text-gray-400">
+                                      Returned:{" "}
+                                      {
+                                        product.productSerials.filter(
+                                          (s) => s.status === "Returned"
+                                        ).length
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                      ) : (
+                        <p className="text-lg font-mono dark:text-white">
+                          {product.serial || "No bulk serial"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -983,21 +1378,63 @@ const SingleProductPage = () => {
                       {product.Categories?.name || "Uncategorized"}
                     </span>
                   </div>
+
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">
-                      Warranty
+                      Warranty Status
                     </span>
-                    {product.warranty === "Yes" ? (
-                      <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
-                        <CheckCircle className="w-4 h-4" />
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-3 py-1 rounded-full text-sm font-medium">
-                        <XCircle className="w-4 h-4" />
-                        No
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {product.useIndividualSerials ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span className="text-sm font-medium">
+                                With Warranty:
+                              </span>
+                              <span className="font-bold">
+                                {product.productSerials?.filter(
+                                  (s) => s.warranty === "Yes"
+                                ).length || 0}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              <span className="text-sm font-medium">
+                                No Warranty:
+                              </span>
+                              <span className="font-bold">
+                                {product.productSerials?.filter(
+                                  (s) => s.warranty === "No"
+                                ).length || 0}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+                            product.warranty === "Yes"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}
+                        >
+                          {product.warranty === "Yes" ? (
+                            <>
+                              <ShieldCheck className="w-4 h-4" />
+                              All {product.quantity} items with warranty
+                            </>
+                          ) : (
+                            <>
+                              <ShieldX className="w-4 h-4" />
+                              All {product.quantity} items without warranty
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1189,8 +1626,52 @@ const SingleProductPage = () => {
       )}
 
       {/* Edit Product Modal */}
-      {(showEditModal || showAddModal) && editingProduct && (
-        <EditProductModal />
+      {showEditModal && editingProduct && <EditProductModal />}
+
+      {/* Alert Modal */}
+      {showAlertModal && (
+        <div className="fixed inset-0 flex backdrop-blur-sm items-center justify-center z-[10000] p-4">
+          <div
+            className={`p-6 rounded-xl border w-full max-w-md transform transition-all duration-300 scale-100 ${
+              isDarkMode
+                ? "bg-gray-900 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className={`flex items-center mb-4 ${
+                alertType === "error"
+                  ? "text-red-500"
+                  : alertType === "success"
+                  ? "text-green-500"
+                  : "text-blue-500"
+              }`}
+            >
+              <AlertCircle size={24} className="mr-3" />
+              <h3 className="text-lg font-bold capitalize">{alertType}</h3>
+            </div>
+            <p
+              className={`mb-6 ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {alertMessage}
+            </p>
+            <button
+              onClick={() => setShowAlertModal(false)}
+              className={`w-full py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+                alertType === "error"
+                  ? "bg-red-500 hover:bg-red-600"
+                  : alertType === "success"
+                  ? "bg-green-500 hover:bg-green-600"
+                  : "bg-blue-500 hover:bg-blue-600"
+              } text-white`}
+            >
+              OK
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
