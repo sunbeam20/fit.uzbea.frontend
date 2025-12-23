@@ -27,7 +27,12 @@ import {
   Shield,
   ShieldCheck,
   ShieldX,
-  AlertCircle, // Added AlertCircle
+  AlertCircle,
+  User,
+  UserCheck,
+  Clock,
+  Building,
+  Plus as PlusIcon,
 } from "lucide-react";
 import {
   useGetProductQuery,
@@ -39,6 +44,9 @@ import {
   useGetProductPurchasesQuery,
   useGetCategoriesQuery,
   useUpdateProductMutation,
+  useGetSuppliersQuery,
+  useCreateSupplierMutation,
+  useCreateCategoryMutation,
 } from "@/state/api";
 
 // Define the Transaction interface
@@ -82,6 +90,9 @@ const SingleProductPage = () => {
   const [deleteProduct] = useDeleteProductMutation();
   const [updateProduct] = useUpdateProductMutation();
   const { data: categories = [] } = useGetCategoriesQuery();
+  const { data: suppliers = [] } = useGetSuppliersQuery();
+  const [createSupplier] = useCreateSupplierMutation();
+  const [createCategory] = useCreateCategoryMutation();
 
   // Transaction history queries
   const { data: sales = [] } = useGetProductSalesQuery(parseInt(productId));
@@ -97,15 +108,23 @@ const SingleProductPage = () => {
 
   // Local state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [productToDeleteName, setProductToDeleteName] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Modal state for edit
+  // Modal state for edit (matching ProductsPage)
   const [showModalCategoryDropdown, setShowModalCategoryDropdown] =
     useState(false);
   const [selectedCategoryName, setSelectedCategoryName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [selectedProductType, setSelectedProductType] = useState<
+    "New" | "PreOwned"
+  >("New");
+  const [selectedWarranty, setSelectedWarranty] = useState<"Yes" | "No">("No");
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(
     null
   );
   const [useIndividualSerials, setUseIndividualSerials] = useState(false);
@@ -115,6 +134,20 @@ const SingleProductPage = () => {
   const [showBulkWarrantyDropdown, setShowBulkWarrantyDropdown] =
     useState(false);
 
+  // NEW: Category creation state
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  // NEW: Supplier state
+  const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    name: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
   // Alert Modal State
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -122,8 +155,15 @@ const SingleProductPage = () => {
     "info"
   );
 
+  // Dropdown states
+  const [showProductTypeModalDropdown, setShowProductTypeModalDropdown] =
+    useState(false);
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+
   // Refs for dropdown closing
   const modalCategoryDropdownRef = useRef<HTMLDivElement>(null);
+  const productTypeDropdownRef = useRef<HTMLDivElement>(null);
+  const supplierDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -133,6 +173,19 @@ const SingleProductPage = () => {
         !modalCategoryDropdownRef.current.contains(event.target as Node)
       ) {
         setShowModalCategoryDropdown(false);
+        setShowNewCategoryInput(false);
+      }
+      if (
+        productTypeDropdownRef.current &&
+        !productTypeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowProductTypeModalDropdown(false);
+      }
+      if (
+        supplierDropdownRef.current &&
+        !supplierDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowSupplierDropdown(false);
       }
     };
 
@@ -147,7 +200,83 @@ const SingleProductPage = () => {
     setShowAlertModal(true);
   };
 
-  // Initialize edit modal data
+  // NEW: Handle adding new category
+  const handleAddNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      showAlert("Please enter a category name", "error");
+      return;
+    }
+
+    try {
+      const newCategory = await createCategory({
+        name: newCategoryName.trim(),
+      }).unwrap();
+      showAlert(
+        `Category "${newCategory.name}" added successfully!`,
+        "success"
+      );
+
+      // Select the new category
+      setSelectedCategoryName(newCategory.name);
+      setSelectedCategoryId(newCategory.id);
+      setNewCategoryName("");
+      setShowNewCategoryInput(false);
+      setShowModalCategoryDropdown(false);
+    } catch (error: any) {
+      console.error("Failed to create category:", error);
+      showAlert(error?.data?.message || "Failed to create category", "error");
+    }
+  };
+
+  // NEW: Handle adding new supplier
+  const handleAddNewSupplier = async () => {
+    if (!newSupplier.name.trim()) {
+      showAlert("Supplier name is required", "error");
+      return;
+    }
+
+    if (!newSupplier.phone.trim()) {
+      showAlert("Supplier phone is required", "error");
+      return;
+    }
+
+    try {
+      const newSupplierData = await createSupplier({
+        name: newSupplier.name.trim(),
+        email: newSupplier.email.trim() || undefined,
+        phone: newSupplier.phone.trim(),
+        address: newSupplier.address.trim() || undefined,
+      }).unwrap();
+
+      // Reset new supplier form
+      setNewSupplier({
+        name: "",
+        contactPerson: "",
+        email: "",
+        phone: "",
+        address: "",
+      });
+
+      setSelectedSupplierId(newSupplierData.id);
+      setShowAddSupplier(false);
+      showAlert(
+        `Supplier "${newSupplierData.name}" added successfully!`,
+        "success"
+      );
+    } catch (error: any) {
+      console.error("Failed to create supplier:", error);
+      showAlert(error?.data?.message || "Failed to create supplier", "error");
+    }
+  };
+
+  // Helper to get selected supplier name
+  const getSelectedSupplierName = () => {
+    if (!selectedSupplierId) return "Select Supplier *";
+    const supplier = suppliers.find((s) => s.id === selectedSupplierId);
+    return supplier ? supplier.name : "Select Supplier *";
+  };
+
+  // Initialize edit modal data (matching ProductsPage)
   const initializeEditModal = (product: Product) => {
     setEditingProduct(product);
 
@@ -166,6 +295,12 @@ const SingleProductPage = () => {
       setSelectedCategoryId(null);
     }
 
+    // Set product type
+    setSelectedProductType(product.productType || "New");
+
+    // Set supplier
+    setSelectedSupplierId(product.supplier_id || null);
+
     // Set individual serial tracking
     setUseIndividualSerials(product.useIndividualSerials || false);
 
@@ -179,6 +314,8 @@ const SingleProductPage = () => {
       setIndividualSerials(serials);
     } else {
       setIndividualSerials([]);
+      // For non-serialized products
+      setSelectedWarranty(product.warranty as "Yes" | "No" || "No");
     }
 
     setShowEditModal(true);
@@ -190,21 +327,54 @@ const SingleProductPage = () => {
     }
   };
 
-  const handleDelete = async () => {
+  // UPDATED: Mark as unavailable instead of delete
+  const handleMarkUnavailable = () => {
+    if (product) {
+      setProductToDeleteName(product.name);
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const confirmMarkUnavailable = async () => {
     try {
-      await deleteProduct(parseInt(productId)).unwrap();
-      showAlert("Product deleted successfully!", "success");
+      // Update product status to "Unavailable" instead of deleting
+      await updateProduct({
+        id: parseInt(productId),
+        product: {
+          status: "Unavailable"
+        }
+      }).unwrap();
+      
+      showAlert("Product marked as unavailable successfully!", "success");
+      refetch(); // Refresh product data
+      
       setTimeout(() => {
         router.push("/product");
       }, 1500);
     } catch (error) {
-      console.error("Failed to delete product:", error);
-      showAlert("Failed to delete product. Please try again.", "error");
+      console.error("Failed to mark product as unavailable:", error);
+      showAlert("Failed to mark product as unavailable. Please try again.", "error");
+    } finally {
+      setShowDeleteConfirm(false);
+      setProductToDeleteName("");
     }
   };
 
+  // UPDATED: Match ProductsPage handleSaveProduct
   const handleSaveProduct = async (formData: FormData) => {
     try {
+      // Validate required fields
+      if (!selectedSupplierId) {
+        showAlert("Please select a supplier", "error");
+        return;
+      }
+
+      if (!selectedCategoryId) {
+        showAlert("Please select a category", "error");
+        return;
+      }
+
+      // Extract basic product data
       const productData: any = {
         name: formData.get("name") as string,
         specification: (formData.get("specification") as string) || null,
@@ -213,8 +383,11 @@ const SingleProductPage = () => {
         purchasePrice: parseFloat(formData.get("purchasePrice") as string),
         wholesalePrice: parseFloat(formData.get("wholesalePrice") as string),
         retailPrice: parseFloat(formData.get("retailPrice") as string),
+        productType: selectedProductType,
         useIndividualSerials,
-        category_id: selectedCategoryId || undefined,
+        category_id: selectedCategoryId,
+        supplier_id: selectedSupplierId,
+        status: "Active", // Always set as Active when updating
       };
 
       // Handle serial numbers based on tracking type
@@ -224,6 +397,9 @@ const SingleProductPage = () => {
           serial: s.serial || "",
           warranty: s.warranty || "No",
         }));
+      } else {
+        // For non-serialized products
+        productData.warranty = selectedWarranty || "No";
       }
 
       if (editingProduct) {
@@ -238,8 +414,14 @@ const SingleProductPage = () => {
       setEditingProduct(null);
       setSelectedCategoryName("");
       setSelectedCategoryId(null);
+      setSelectedWarranty("No");
+      setSelectedProductType("New");
       setUseIndividualSerials(false);
       setIndividualSerials([]);
+      setSelectedSupplierId(null);
+      setShowAddSupplier(false);
+      setNewCategoryName("");
+      setShowNewCategoryInput(false);
 
       showAlert("Product updated successfully!", "success");
     } catch (error: any) {
@@ -307,6 +489,18 @@ const SingleProductPage = () => {
     }
 
     return margin.trim();
+  };
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
@@ -474,7 +668,7 @@ const SingleProductPage = () => {
     );
   };
 
-  // Edit Product Modal (matching the ProductsPage modal)
+  // UPDATED: Edit Product Modal (exactly matching ProductsPage modal)
   const EditProductModal = () => (
     <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
@@ -501,6 +695,7 @@ const SingleProductPage = () => {
             <div className="space-y-4">
               {/* Basic Information */}
               <div className="grid grid-cols-2 gap-4">
+                {/* Product Name */}
                 <div>
                   <label
                     className={`block text-sm font-medium mb-1 ${
@@ -521,6 +716,89 @@ const SingleProductPage = () => {
                     defaultValue={editingProduct?.name || ""}
                   />
                 </div>
+
+                {/* Product Type Dropdown */}
+                <div className="relative" ref={productTypeDropdownRef}>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Product Type *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowProductTypeModalDropdown(!showProductTypeModalDropdown)
+                    }
+                    className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    <span>
+                      {selectedProductType === "New" ? "New" : "Pre-Owned"}
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+
+                  {showProductTypeModalDropdown && (
+                    <ul
+                      className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg ${
+                        isDarkMode
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProductType("New");
+                            setShowProductTypeModalDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 ${
+                            isDarkMode
+                              ? "hover:bg-gray-700 text-white"
+                              : "hover:bg-gray-100 text-gray-900"
+                          } ${
+                            selectedProductType === "New"
+                              ? "bg-blue-50 text-blue-600"
+                              : ""
+                          }`}
+                        >
+                          New
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProductType("PreOwned");
+                            setShowProductTypeModalDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 ${
+                            isDarkMode
+                              ? "hover:bg-gray-700 text-white"
+                              : "hover:bg-gray-100 text-gray-900"
+                          } ${
+                            selectedProductType === "PreOwned"
+                              ? "bg-blue-50 text-blue-600"
+                              : ""
+                          }`}
+                        >
+                          Pre-Owned
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+              </div>
+
+              {/* Category + Supplier + Quantity */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Category with Add New option */}
                 <div className="relative" ref={modalCategoryDropdownRef}>
                   <label
                     className={`block text-sm font-medium mb-1 ${
@@ -540,173 +818,305 @@ const SingleProductPage = () => {
                         : "bg-white border-gray-300 text-gray-900"
                     }`}
                   >
-                    <span>{selectedCategoryName || "Select Category"}</span>
+                    <span>
+                      {selectedCategoryName || "Select Category *"}
+                    </span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
                   {showModalCategoryDropdown && (
-                    <ul
+                    <div
                       className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${
                         isDarkMode
                           ? "bg-gray-800 border-gray-700"
                           : "bg-white border-gray-200"
                       }`}
                     >
-                      {categories.map((category) => (
-                        <li key={category.id}>
+                      {!showNewCategoryInput ? (
+                        <>
+                          {categories.map((category) => (
+                            <div key={category.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCategoryName(category.name);
+                                  setSelectedCategoryId(category.id);
+                                  setShowModalCategoryDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 ${
+                                  isDarkMode
+                                    ? "hover:bg-gray-700 text-white"
+                                    : "hover:bg-gray-100 text-gray-900"
+                                }`}
+                              >
+                                {category.name}
+                              </button>
+                            </div>
+                          ))}
+                          <div className="border-t border-gray-200 dark:border-gray-700">
+                            <button
+                              type="button"
+                              onClick={() => setShowNewCategoryInput(true)}
+                              className="w-full text-left px-3 py-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <PlusIcon className="w-4 h-4" />
+                              Add New Category
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-3">
+                          <div className="flex gap-2 mb-2">
+                            <input
+                              type="text"
+                              value={newCategoryName}
+                              onChange={(e) =>
+                                setNewCategoryName(e.target.value)
+                              }
+                              placeholder="Enter new category name *"
+                              className={`flex-1 px-3 py-1 border rounded text-sm ${
+                                isDarkMode
+                                  ? "bg-gray-700 border-gray-600 text-white"
+                                  : "bg-white border-gray-300"
+                              }`}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddNewCategory}
+                              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                            >
+                              Add
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedCategoryName(category.name);
-                              setSelectedCategoryId(category.id);
-                              setShowModalCategoryDropdown(false);
+                              setShowNewCategoryInput(false);
+                              setNewCategoryName("");
                             }}
-                            className={`w-full text-left px-3 py-2 ${
-                              isDarkMode
-                                ? "hover:bg-gray-700 text-white"
-                                : "hover:bg-gray-100 text-gray-900"
-                            }`}
+                            className="text-sm text-gray-500 hover:text-gray-700"
                           >
-                            {category.name}
+                            Cancel
                           </button>
-                        </li>
-                      ))}
-                    </ul>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Prices */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+                {/* Supplier with Add New option */}
+                <div className="relative" ref={supplierDropdownRef}>
                   <label
                     className={`block text-sm font-medium mb-1 ${
                       isDarkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Purchase Price *
+                    Supplier *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="purchasePrice"
-                    required
-                    min="0"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowSupplierDropdown(!showSupplierDropdown)
+                    }
+                    className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                       isDarkMode
                         ? "bg-gray-700 border-gray-600 text-white"
                         : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                    defaultValue={editingProduct?.purchasePrice || ""}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDarkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Wholesale Price *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="wholesalePrice"
-                    required
-                    min="0"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                      isDarkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                    defaultValue={editingProduct?.wholesalePrice || ""}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDarkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Retail Price *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="retailPrice"
-                    required
-                    min="0"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                      isDarkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                    defaultValue={editingProduct?.retailPrice || ""}
-                  />
-                </div>
-              </div>
+                    <span>{getSelectedSupplierName()}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
 
-              {/* Quantity and Individual Serial Toggle */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className={`block text-sm font-medium mb-1 ${
-                      isDarkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    required
-                    min="1"
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
-                      isDarkMode
-                        ? "bg-gray-700 border-gray-600 text-white"
-                        : "bg-white border-gray-300 text-gray-900"
-                    }`}
-                    defaultValue={editingProduct?.quantity || 1}
-                    onChange={(e) => {
-                      const qty = parseInt(e.target.value) || 1;
-                      if (qty > 0 && useIndividualSerials) {
-                        const newSerials = Array.from(
-                          { length: qty },
-                          (_, i) => ({
-                            id: individualSerials[i]?.id,
-                            serial: individualSerials[i]?.serial || "",
-                            warranty: individualSerials[i]?.warranty || "No",
-                          })
-                        );
-                        setIndividualSerials(newSerials);
-                      }
-                    }}
-                  />
+                  {showSupplierDropdown && (
+                    <div
+                      className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                        isDarkMode
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
+                      {!showAddSupplier ? (
+                        <>
+                          {suppliers.map((supplier) => (
+                            <div key={supplier.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSupplierId(supplier.id);
+                                  setShowSupplierDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 ${
+                                  isDarkMode
+                                    ? "hover:bg-gray-700 text-white"
+                                    : "hover:bg-gray-100 text-gray-900"
+                                }`}
+                              >
+                                <div className="font-medium">
+                                  {supplier.name}
+                                </div>
+                              </button>
+                            </div>
+                          ))}
+                          <div className="border-t border-gray-200 dark:border-gray-700">
+                            <button
+                              type="button"
+                              onClick={() => setShowAddSupplier(true)}
+                              className="w-full text-left px-3 py-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <PlusIcon className="w-4 h-4" />
+                              Add New Supplier
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-3">
+                          <div className="mb-3">
+                            <h4 className="font-medium mb-2">
+                              Add New Supplier
+                            </h4>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={newSupplier.name}
+                                onChange={(e) =>
+                                  setNewSupplier({
+                                    ...newSupplier,
+                                    name: e.target.value,
+                                  })
+                                }
+                                placeholder="Supplier Name *"
+                                className={`w-full px-3 py-1 border rounded text-sm ${
+                                  isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300"
+                                }`}
+                                autoFocus
+                              />
+                              <input
+                                type="text"
+                                value={newSupplier.contactPerson}
+                                onChange={(e) =>
+                                  setNewSupplier({
+                                    ...newSupplier,
+                                    contactPerson: e.target.value,
+                                  })
+                                }
+                                placeholder="Contact Person"
+                                className={`w-full px-3 py-1 border rounded text-sm ${
+                                  isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300"
+                                }`}
+                              />
+                              <input
+                                type="email"
+                                value={newSupplier.email}
+                                onChange={(e) =>
+                                  setNewSupplier({
+                                    ...newSupplier,
+                                    email: e.target.value,
+                                  })
+                                }
+                                placeholder="Email"
+                                className={`w-full px-3 py-1 border rounded text-sm ${
+                                  isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300"
+                                }`}
+                              />
+                              <input
+                                type="text"
+                                value={newSupplier.phone}
+                                onChange={(e) =>
+                                  setNewSupplier({
+                                    ...newSupplier,
+                                    phone: e.target.value,
+                                  })
+                                }
+                                placeholder="Phone *"
+                                className={`w-full px-3 py-1 border rounded text-sm ${
+                                  isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300"
+                                }`}
+                              />
+                              <input
+                                type="text"
+                                value={newSupplier.address}
+                                onChange={(e) =>
+                                  setNewSupplier({
+                                    ...newSupplier,
+                                    address: e.target.value,
+                                  })
+                                }
+                                placeholder="Address"
+                                className={`w-full px-3 py-1 border rounded text-sm ${
+                                  isDarkMode
+                                    ? "bg-gray-700 border-gray-600 text-white"
+                                    : "bg-white border-gray-300"
+                                }`}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleAddNewSupplier}
+                              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                            >
+                              Add Supplier
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowAddSupplier(false);
+                                setNewSupplier({
+                                  name: "",
+                                  contactPerson: "",
+                                  email: "",
+                                  phone: "",
+                                  address: "",
+                                });
+                              }}
+                              className="px-3 py-1 border rounded text-sm hover:bg-gray-100"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-col justify-end">
-                  <div className="flex items-center gap-2">
+
+                {/* Quantity and Individual Serial Toggle */}
+                <div className="relative">
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-1 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Quantity *
+                    </label>
                     <input
-                      type="checkbox"
-                      name="useIndividualSerials"
-                      checked={useIndividualSerials}
+                      type="number"
+                      name="quantity"
+                      required
+                      min="1"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                      defaultValue={editingProduct?.quantity || 1}
                       onChange={(e) => {
-                        const checked = e.target.checked;
-                        setUseIndividualSerials(checked);
-
-                        // Initialize serials array if checked
-                        if (checked) {
-                          const quantity =
-                            parseInt(
-                              (
-                                document.querySelector(
-                                  'input[name="quantity"]'
-                                ) as HTMLInputElement
-                              )?.value
-                            ) ||
-                            editingProduct?.quantity ||
-                            1;
+                        const qty = parseInt(e.target.value) || 1;
+                        if (qty > 0 && useIndividualSerials) {
                           const newSerials = Array.from(
-                            { length: quantity },
+                            { length: qty },
                             (_, i) => ({
                               id: individualSerials[i]?.id,
                               serial: individualSerials[i]?.serial || "",
@@ -716,15 +1126,50 @@ const SingleProductPage = () => {
                           setIndividualSerials(newSerials);
                         }
                       }}
-                      className="w-4 h-4"
                     />
-                    <label
-                      className={`text-sm ${
-                        isDarkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      Track each item individually with serial numbers
-                    </label>
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        name="useIndividualSerials"
+                        checked={useIndividualSerials}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setUseIndividualSerials(checked);
+
+                          // Initialize serials array if checked
+                          if (checked) {
+                            const quantity =
+                              parseInt(
+                                (
+                                  document.querySelector(
+                                    'input[name="quantity"]'
+                                  ) as HTMLInputElement
+                                )?.value
+                              ) || editingProduct?.quantity || 1;
+                            const newSerials = Array.from(
+                              { length: quantity },
+                              (_, i) => ({
+                                id: individualSerials[i]?.id,
+                                serial: individualSerials[i]?.serial || "",
+                                warranty:
+                                  individualSerials[i]?.warranty || "No",
+                              })
+                            );
+                            setIndividualSerials(newSerials);
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <label
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Individual serial numbers & warranty
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -732,7 +1177,7 @@ const SingleProductPage = () => {
               {/* Individual Serial Numbers Section */}
               {useIndividualSerials && (
                 <div
-                  className={`mt-4 p-4 border rounded-lg ${
+                  className={`mt-2 p-4 border rounded-lg col-span-3 ${
                     isDarkMode ? "border-gray-700" : "border-gray-200"
                   }`}
                 >
@@ -837,8 +1282,7 @@ const SingleProductPage = () => {
                       </div>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-60 overflow-y-auto p-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-100 overflow-y-auto p-2">
                     {individualSerials.map((serial, index) => (
                       <div
                         key={serial.id || index}
@@ -909,7 +1353,6 @@ const SingleProductPage = () => {
                       </div>
                     ))}
                   </div>
-
                   <div
                     className={`mt-3 text-sm ${
                       isDarkMode ? "text-gray-400" : "text-gray-500"
@@ -927,8 +1370,78 @@ const SingleProductPage = () => {
                 </div>
               )}
 
-              {/* Specification and Description */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Prices */}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Purchase Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="purchasePrice"
+                    required
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                    defaultValue={editingProduct?.purchasePrice || ""}
+                  />
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Wholesale Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="wholesalePrice"
+                    required
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                    defaultValue={editingProduct?.wholesalePrice || ""}
+                  />
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-1 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Retail Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="retailPrice"
+                    required
+                    min="0"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                      isDarkMode
+                        ? "bg-gray-700 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                    defaultValue={editingProduct?.retailPrice || ""}
+                  />
+                </div>
+              </div>
+
+              {/* Specification */}
+              <div className="relative">
                 <div>
                   <label
                     className={`block text-sm font-medium mb-1 ${
@@ -950,6 +1463,7 @@ const SingleProductPage = () => {
                 </div>
               </div>
 
+              {/* Description */}
               <div>
                 <label
                   className={`block text-sm font-medium mb-1 ${
@@ -980,6 +1494,10 @@ const SingleProductPage = () => {
                   setSelectedCategoryId(null);
                   setUseIndividualSerials(false);
                   setIndividualSerials([]);
+                  setSelectedSupplierId(null);
+                  setShowAddSupplier(false);
+                  setNewCategoryName("");
+                  setShowNewCategoryInput(false);
                 }}
                 className={`px-4 py-2 border rounded-lg hover:bg-gray-50 cursor-pointer ${
                   isDarkMode
@@ -1064,12 +1582,18 @@ const SingleProductPage = () => {
               <Edit className="w-4 h-4" />
               Edit Product
             </button>
+            {/* UPDATED: Changed to Mark as Unavailable */}
             <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+              onClick={handleMarkUnavailable}
+              disabled={product.status === "Unavailable"}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                product.status === "Unavailable"
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-orange-500 hover:bg-orange-600 text-white"
+              }`}
             >
               <Trash2 className="w-4 h-4" />
-              Delete
+              {product.status === "Unavailable" ? "Unavailable" : "Mark as Unavailable"}
             </button>
           </div>
         </div>
@@ -1112,9 +1636,9 @@ const SingleProductPage = () => {
       {activeTab === "overview" && (
         <>
           {/* Product Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 grid-rows-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             {/* Main Product Information */}
-            <div className="col-span-2 row-span-3">
+            <div className="col-span-2">
               <div
                 className={`rounded-lg shadow-sm border overflow-hidden h-full ${
                   isDarkMode
@@ -1128,7 +1652,7 @@ const SingleProductPage = () => {
                     Product Information
                   </h2>
 
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                         Product Id
@@ -1147,7 +1671,7 @@ const SingleProductPage = () => {
                     </div>
 
                     {product.specification && (
-                      <div>
+                      <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                           Specification
                         </label>
@@ -1158,7 +1682,7 @@ const SingleProductPage = () => {
                     )}
 
                     {product.description && (
-                      <div>
+                      <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                           Description
                         </label>
@@ -1167,7 +1691,8 @@ const SingleProductPage = () => {
                         </p>
                       </div>
                     )}
-                    <div>
+                    
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                         Stock
                       </label>
@@ -1175,93 +1700,45 @@ const SingleProductPage = () => {
                         {product.quantity} units
                       </p>
                     </div>
-                    {/* Serial Numbers Section */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
-                        {product.useIndividualSerials
-                          ? "Serial Numbers"
-                          : "Serial Number"}
-                      </label>
-
-                      {product.useIndividualSerials ? (
-                        <div className="space-y-2">
-                          {product.productSerials &&
-                          product.productSerials.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {product.productSerials.map((serial, index) => (
-                                <div
-                                  key={serial.id}
-                                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-mono ${
-                                    serial.status === "Available"
-                                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                      : serial.status === "Sold"
-                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                                      : serial.status === "Returned"
-                                      ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
-                                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                  }`}
-                                >
-                                  {serial.warranty === "Yes" && (
-                                    <ShieldCheck className="size-4" />
-                                  )}
-                                  {serial.warranty === "No" && (
-                                    <ShieldX className="size-4" />
-                                  )}
-                                  {serial.serial}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 dark:text-gray-400 italic">
-                              No serial numbers registered
+                    
+                    {/* Supplier Information */}
+                    <div className="col-span-2 mt-4 pt-4 border-t dark:border-gray-700 border-gray-200">
+                      <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                        <Building className="w-5 h-5" />
+                        Supplier Information
+                      </h3>
+                      {product.supplier ? (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                              Supplier Name
+                            </label>
+                            <p className="text-lg font-semibold dark:text-white">
+                              {product.supplier.name || "N/A"}
                             </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                              Contact
+                            </label>
+                            <p className="text-lg dark:text-white">
+                              {product.supplier.phone || product.supplier.email || "N/A"}
+                            </p>
+                          </div>
+                          {product.supplier.address && (
+                            <div className="col-span-2">
+                              <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                                Address
+                              </label>
+                              <p className="text-lg dark:text-white">
+                                {product.supplier.address}
+                              </p>
+                            </div>
                           )}
-
-                          {/* Summary */}
-                          {product.productSerials &&
-                            product.productSerials.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                <div className="flex flex-wrap gap-4 text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Available:{" "}
-                                      {
-                                        product.productSerials.filter(
-                                          (s) => s.status === "Available"
-                                        ).length
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Sold:{" "}
-                                      {
-                                        product.productSerials.filter(
-                                          (s) => s.status === "Sold"
-                                        ).length
-                                      }
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Returned:{" "}
-                                      {
-                                        product.productSerials.filter(
-                                          (s) => s.status === "Returned"
-                                        ).length
-                                      }
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                         </div>
                       ) : (
-                        <p className="text-lg font-mono dark:text-white">
-                          {product.serial || "No bulk serial"}
+                        <p className="text-gray-500 dark:text-gray-400 italic">
+                          No supplier information available
                         </p>
                       )}
                     </div>
@@ -1271,150 +1748,214 @@ const SingleProductPage = () => {
             </div>
 
             {/* Sidebar Information */}
-            <div className="space-y-6 col-span-1 row-span-3">
-              {/* Transaction Statistics */}
+            <div className="space-y-6">
+              {/* Pricing Information */}
               <div
-                className={`rounded-lg shadow-sm border p-6 ${
+                className={`rounded-lg shadow-sm border ${
                   isDarkMode
                     ? "bg-gray-800/50 border-gray-700"
                     : "bg-white/50 border-gray-200"
                 }`}
               >
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
-                  <FileText className="w-5 h-5" />
-                  Transaction Summary
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-green-500" />
-                      Total Sold
-                    </span>
-                    <span className="font-semibold dark:text-white">
-                      {totalSales} units
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4 text-blue-500" />
-                      Total Purchased
-                    </span>
-                    <span className="font-semibold dark:text-white">
-                      {totalPurchases} units
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <Undo2 className="w-4 h-4 text-orange-500" />
-                      Total Returns
-                    </span>
-                    <span className="font-semibold dark:text-white">
-                      {totalReturns} units
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <ArrowLeftRight className="w-4 h-4 text-purple-500" />
-                      Total Exchanges
-                    </span>
-                    <span className="font-semibold dark:text-white">
-                      {totalExchanges} units
-                    </span>
+                <div className="p-6">
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Pricing Information
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg dark:border-gray-700 border-gray-200">
+                      <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
+                        Purchase Price
+                      </label>
+                      <p className="text-2xl font-bold">৳{product.purchasePrice}</p>
+                      <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                        Cost Price
+                      </p>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 dark:border-gray-700 border-gray-200">
+                      <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
+                        Wholesale Price
+                      </label>
+                      <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                        ৳{product.wholesalePrice}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                        Bulk Selling Price
+                      </p>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-900/20 dark:border-gray-700 border-gray-200">
+                      <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
+                        Retail Price
+                      </label>
+                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        ৳{product.retailPrice}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                        Customer Price
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Stock Information */}
+              {/* System Information */}
               <div
-                className={`rounded-lg shadow-sm border p-6 ${
+                className={`rounded-lg shadow-sm border ${
                   isDarkMode
                     ? "bg-gray-800/50 border-gray-700"
                     : "bg-white/50 border-gray-200"
                 }`}
               >
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
-                  <Warehouse className="w-5 h-5" />
-                  Stock Information
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Current Quantity
-                    </span>
-                    <span className="text-2xl font-bold flex items-center gap-2 dark:text-white">
-                      <Hash className="w-5 h-5 text-gray-400" />
-                      {product.quantity}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Status
-                    </span>
-                    <span className={`font-semibold ${stockStatus.color}`}>
-                      {stockStatus.status}
-                    </span>
+                <div className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
+                    <Clock className="w-5 h-5" />
+                    System Information
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Created By
+                        </label>
+                      </div>
+                      <p className="text-lg font-semibold dark:text-white">
+                        {product.created_by || "System"}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {product.createdAt ? formatDate(product.createdAt) : "N/A"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <UserCheck className="w-4 h-4 text-gray-400" />
+                        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Last Updated By
+                        </label>
+                      </div>
+                      <p className="text-lg font-semibold dark:text-white">
+                        {product.updated_by || "Not updated"}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {product.updatedAt ? formatDate(product.updatedAt) : "N/A"}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Category & Warranty */}
+          {/* Bottom Row Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Serial Numbers Section */}
+            <div className="col-span-2">
               <div
-                className={`rounded-lg shadow-sm border p-6 ${
+                className={`rounded-lg shadow-sm border ${
                   isDarkMode
                     ? "bg-gray-800/50 border-gray-700"
                     : "bg-white/50 border-gray-200"
                 }`}
               >
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
-                  <Tag className="w-5 h-5" />
-                  Classification
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Category
-                    </span>
-                    <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
-                      {product.Categories?.name || "Uncategorized"}
-                    </span>
-                  </div>
+                <div className="p-4">
+                  <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    {product.useIndividualSerials ? (
+                      <>
+                        <Shield className="w-5 h-5" />
+                        Serial Numbers & Warranty Status
+                      </>
+                    ) : (
+                      <>
+                        <Hash className="w-5 h-5" />
+                        Serial Number Information
+                      </>
+                    )}
+                  </h2>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Warranty Status
-                    </span>
-                    <div className="flex flex-col items-end gap-1">
-                      {product.useIndividualSerials ? (
+                  {product.useIndividualSerials ? (
+                    <div className="space-y-4">
+                      {product.productSerials && product.productSerials.length > 0 ? (
                         <>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                              <span className="text-sm font-medium">
-                                With Warranty:
-                              </span>
-                              <span className="font-bold">
-                                {product.productSerials?.filter(
-                                  (s) => s.warranty === "Yes"
-                                ).length || 0}
-                              </span>
-                            </div>
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {product.productSerials.map((serial, index) => (
+                              <div
+                                key={serial.id}
+                                className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-mono ${
+                                  serial.status === "Available"
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                    : serial.status === "Sold"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                    : serial.status === "Returned"
+                                    ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                }`}
+                              >
+                                {serial.warranty === "Yes" && (
+                                  <ShieldCheck className="size-4" />
+                                )}
+                                {serial.warranty === "No" && (
+                                  <ShieldX className="size-4" />
+                                )}
+                                {serial.serial || `Item ${index + 1}`}
+                              </div>
+                            ))}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                              <span className="text-sm font-medium">
-                                No Warranty:
-                              </span>
-                              <span className="font-bold">
-                                {product.productSerials?.filter(
-                                  (s) => s.warranty === "No"
-                                ).length || 0}
-                              </span>
+
+                          {/* Summary */}
+                          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h4 className="font-medium mb-3 dark:text-white">Summary</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {product.productSerials.filter(s => s.status === "Available").length}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Available</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {product.productSerials.filter(s => s.status === "Sold").length}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">Sold</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {product.productSerials.filter(s => s.warranty === "Yes").length}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">With Warranty</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                <div className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {product.productSerials.filter(s => s.warranty === "No").length}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">No Warranty</div>
+                              </div>
                             </div>
                           </div>
                         </>
                       ) : (
-                        <div
+                        <p className="text-gray-500 dark:text-gray-400 italic">
+                          No serial numbers registered
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                          Bulk Serial Number
+                        </label>
+                        <p className="text-lg font-mono dark:text-white">
+                          {product.serial || "No bulk serial"}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                          Warranty Status
+                        </label>
+                        <span
                           className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
                             product.warranty === "Yes"
                               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
@@ -1432,73 +1973,107 @@ const SingleProductPage = () => {
                               All {product.quantity} items without warranty
                             </>
                           )}
-                        </div>
-                      )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Category & Transaction Statistics */}
+            <div className="space-y-6">
+              {/* Category & Stock */}
+              <div
+                className={`rounded-lg shadow-sm border ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
+                <div className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
+                    <Tag className="w-5 h-5" />
+                    Classification & Stock
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Category
+                      </label>
+                      <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
+                        {product.Categories?.name || "Uncategorized"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
+                        Stock Status
+                      </label>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold dark:text-white">
+                          {product.quantity} units
+                        </span>
+                        <span className={`font-semibold ${stockStatus.color}`}>
+                          {stockStatus.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Pricing Information */}
-          <div
-            className={`rounded-lg shadow-sm border mb-6 ${
-              isDarkMode
-                ? "bg-gray-800/50 border-gray-700"
-                : "bg-white/50 border-gray-200"
-            }`}
-          >
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5" />
-                Pricing Information
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div
-                  className={`text-center p-4 border rounded-lg ${
-                    isDarkMode ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <label className="block text-sm font-medium mb-2">
-                    Purchase Price
-                  </label>
-                  <p className="text-2xl font-bold">৳{product.purchasePrice}</p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                    Cost Price
-                  </p>
-                </div>
-
-                <div
-                  className={`text-center p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 ${
-                    isDarkMode ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
-                    Wholesale Price
-                  </label>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    ৳{product.wholesalePrice}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                    Bulk Selling Price
-                  </p>
-                </div>
-
-                <div
-                  className={`text-center p-4 border rounded-lg bg-green-50 dark:bg-green-900/20 ${
-                    isDarkMode ? "border-gray-700" : "border-gray-200"
-                  }`}
-                >
-                  <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
-                    Retail Price
-                  </label>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    ৳{product.retailPrice}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                    Customer Price
-                  </p>
+              {/* Transaction Statistics */}
+              <div
+                className={`rounded-lg shadow-sm border ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
+                <div className="p-6">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white">
+                    <FileText className="w-5 h-5" />
+                    Transaction Summary
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-green-500" />
+                        Total Sold
+                      </span>
+                      <span className="font-semibold dark:text-white">
+                        {totalSales} units
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4 text-blue-500" />
+                        Total Purchased
+                      </span>
+                      <span className="font-semibold dark:text-white">
+                        {totalPurchases} units
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <Undo2 className="w-4 h-4 text-orange-500" />
+                        Total Returns
+                      </span>
+                      <span className="font-semibold dark:text-white">
+                        {totalReturns} units
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <ArrowLeftRight className="w-4 h-4 text-purple-500" />
+                        Total Exchanges
+                      </span>
+                      <span className="font-semibold dark:text-white">
+                        {totalExchanges} units
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1582,7 +2157,7 @@ const SingleProductPage = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* UPDATED: Delete Confirmation Modal (Mark as Unavailable) */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div
@@ -1592,32 +2167,36 @@ const SingleProductPage = () => {
           >
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900/20">
-                  <Trash2 className="w-6 h-6 text-red-500" />
+                <div className="p-2 bg-orange-100 rounded-lg dark:bg-orange-900/20">
+                  <Trash2 className="w-6 h-6 text-orange-500" />
                 </div>
                 <h3 className="text-lg font-bold dark:text-white">
-                  Delete Product
+                  Mark Product as Unavailable
                 </h3>
               </div>
 
               <p className="text-gray-600 mb-6 dark:text-gray-400">
-                Are you sure you want to delete <strong>{product.name}</strong>?
-                This action cannot be undone and will permanently remove the
-                product from your inventory.
+                Are you sure you want to mark{" "}
+                <strong>{productToDeleteName}</strong> as unavailable? This
+                product will be hidden from active listings but the data will be
+                preserved.
               </p>
 
               <div className="flex justify-end gap-3">
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setProductToDeleteName("");
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:text-white dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                  onClick={confirmMarkUnavailable}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
                 >
-                  Delete Product
+                  Mark as Unavailable
                 </button>
               </div>
             </div>

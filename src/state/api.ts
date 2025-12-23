@@ -11,20 +11,50 @@ export interface Product {
   retailPrice: number;
   serial?: string; // Bulk serial (optional)
   warranty: "Yes" | "No";
+  productType: "New" | "PreOwned";
+  status: "Active" | "Unavailable";
   category_id: number;
+  supplier_id?: number;
   useIndividualSerials: boolean;
+  created_by?: number;
+  updated_by?: number;
+  createdAt: string;
+  updatedAt: string;
   Categories?: {
     id: number;
     name: string;
   };
+  supplier?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
   productSerials?: ProductSerial[];
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  updater?: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 export interface ProductSerial {
   warranty: string;
   id: number;
   serial: string;
   product_id: number;
-  status: "Available" | "Sold" | "Returned" | "Unavailable" | "InService" | "Exchanged";
+  status:
+    | "Available"
+    | "Sold"
+    | "Returned"
+    | "Unavailable"
+    | "InService"
+    | "Exchanged";
   sale_id?: number;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +68,7 @@ export interface CreateProductRequest {
   wholesalePrice: number;
   retailPrice: number;
   warranty: "Yes" | "No";
+  productType: "New" | "PreOwned";
   category_id: number;
   useIndividualSerials: boolean;
   bulkSerial?: string; // For non-serialized products
@@ -437,6 +468,7 @@ export const api = createApi({
     "Customer",
     "Purchase",
     "User",
+    "Supplier",
   ],
   endpoints: (build) => ({
     getDashboardMetrics: build.query<DashboardMetrics, void>({
@@ -528,6 +560,34 @@ export const api = createApi({
     getCategories: build.query<Category[], void>({
       query: () => "/categories",
       providesTags: ["Category"],
+    }),
+    createCategory: build.mutation<Category, Partial<Category>>({
+      query: (category) => ({
+        url: "/categories",
+        method: "POST",
+        body: category,
+      }),
+      invalidatesTags: ["Category"],
+    }),
+
+    updateCategory: build.mutation<
+      Category,
+      { id: number; category: Partial<Category> }
+    >({
+      query: ({ id, category }) => ({
+        url: `/categories/${id}`,
+        method: "PUT",
+        body: category,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Category", id }],
+    }),
+
+    deleteCategory: build.mutation<void, number>({
+      query: (id) => ({
+        url: `/categories/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Category"],
     }),
     // Product History
     getProductSales: build.query<Transaction[], number>({
@@ -877,6 +937,42 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+    getSuppliers: build.query<Supplier[], void>({
+      query: () => "/supplier",
+      providesTags: ["Supplier"],
+    }),
+
+    getSupplier: build.query<Supplier, number>({
+      query: (id) => `/supplier/${id}`,
+      providesTags: (result, error, id) => [{ type: "Supplier", id }],
+    }),
+    // Suppliers
+    createSupplier: build.mutation<Supplier, Partial<Supplier>>({
+      query: (supplier) => ({
+        url: "/supplier",
+        method: "POST",
+        body: supplier,
+      }),
+      invalidatesTags: ["Supplier"],
+    }),
+    updateSupplier: build.mutation<
+      Supplier,
+      { id: number; supplier: Partial<Supplier> }
+    >({
+      query: ({ id, supplier }) => ({
+        url: `/supplier/${id}`,
+        method: "PUT",
+        body: supplier,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Supplier", id }],
+    }),
+    deleteSupplier: build.mutation<void, number>({
+      query: (id) => ({
+        url: `/supplier/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Supplier"],
+    }),
   }),
 });
 
@@ -888,6 +984,9 @@ export const {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useGetCategoriesQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
   useGetProductSalesQuery,
   useGetProductExchangesQuery,
   useGetProductSalesReturnsQuery,
@@ -943,4 +1042,9 @@ export const {
   useCreateSaleFromPOSMutation,
   useGetPOSProductsQuery,
   useScanBarcodeQuery,
+  useGetSuppliersQuery,
+  useGetSupplierQuery,
+  useCreateSupplierMutation,
+  useUpdateSupplierMutation,
+  useDeleteSupplierMutation,
 } = api;
