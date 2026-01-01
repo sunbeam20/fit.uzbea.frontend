@@ -194,7 +194,10 @@ const SingleProductPage = () => {
   }, []);
 
   // Helper function to show alerts
-  const showAlert = (message: string, type: "success" | "error" | "info" = "info") => {
+  const showAlert = (
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
     setAlertMessage(message);
     setAlertType(type);
     setShowAlertModal(true);
@@ -314,8 +317,6 @@ const SingleProductPage = () => {
       setIndividualSerials(serials);
     } else {
       setIndividualSerials([]);
-      // For non-serialized products
-      setSelectedWarranty(product.warranty as "Yes" | "No" || "No");
     }
 
     setShowEditModal(true);
@@ -341,19 +342,22 @@ const SingleProductPage = () => {
       await updateProduct({
         id: parseInt(productId),
         product: {
-          status: "Unavailable"
-        }
+          status: "Unavailable",
+        },
       }).unwrap();
-      
+
       showAlert("Product marked as unavailable successfully!", "success");
       refetch(); // Refresh product data
-      
+
       setTimeout(() => {
         router.push("/product");
       }, 1500);
     } catch (error) {
       console.error("Failed to mark product as unavailable:", error);
-      showAlert("Failed to mark product as unavailable. Please try again.", "error");
+      showAlert(
+        "Failed to mark product as unavailable. Please try again.",
+        "error"
+      );
     } finally {
       setShowDeleteConfirm(false);
       setProductToDeleteName("");
@@ -473,7 +477,7 @@ const SingleProductPage = () => {
     (sum: number, exchange: Transaction) => sum + exchange.quantity,
     0
   );
-  
+
   // Helper function to calculate content margin
   const getContentMargin = () => {
     let margin = "ml-0 ";
@@ -494,12 +498,12 @@ const SingleProductPage = () => {
   // Format date helper
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -729,7 +733,9 @@ const SingleProductPage = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      setShowProductTypeModalDropdown(!showProductTypeModalDropdown)
+                      setShowProductTypeModalDropdown(
+                        !showProductTypeModalDropdown
+                      )
                     }
                     className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
                       isDarkMode
@@ -818,9 +824,7 @@ const SingleProductPage = () => {
                         : "bg-white border-gray-300 text-gray-900"
                     }`}
                   >
-                    <span>
-                      {selectedCategoryName || "Select Category *"}
-                    </span>
+                    <span>{selectedCategoryName || "Select Category *"}</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
@@ -1147,7 +1151,9 @@ const SingleProductPage = () => {
                                     'input[name="quantity"]'
                                   ) as HTMLInputElement
                                 )?.value
-                              ) || editingProduct?.quantity || 1;
+                              ) ||
+                              editingProduct?.quantity ||
+                              1;
                             const newSerials = Array.from(
                               { length: quantity },
                               (_, i) => ({
@@ -1545,7 +1551,7 @@ const SingleProductPage = () => {
               {product.name}
             </h1>
             <p className="mt-1 text-gray-600 dark:text-gray-400">
-              ID: {product.id}
+              ID: {product.productCode}
             </p>
           </div>
         </div>
@@ -1593,7 +1599,9 @@ const SingleProductPage = () => {
               }`}
             >
               <Trash2 className="w-4 h-4" />
-              {product.status === "Unavailable" ? "Unavailable" : "Mark as Unavailable"}
+              {product.status === "Unavailable"
+                ? "Unavailable"
+                : "Mark as Unavailable"}
             </button>
           </div>
         </div>
@@ -1691,7 +1699,7 @@ const SingleProductPage = () => {
                         </p>
                       </div>
                     )}
-                    
+
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                         Stock
@@ -1700,7 +1708,7 @@ const SingleProductPage = () => {
                         {product.quantity} units
                       </p>
                     </div>
-                    
+
                     {/* Supplier Information */}
                     <div className="col-span-2 mt-4 pt-4 border-t dark:border-gray-700 border-gray-200">
                       <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
@@ -1722,7 +1730,9 @@ const SingleProductPage = () => {
                               Contact
                             </label>
                             <p className="text-lg dark:text-white">
-                              {product.supplier.phone || product.supplier.email || "N/A"}
+                              {product.supplier.phone ||
+                                product.supplier.email ||
+                                "N/A"}
                             </p>
                           </div>
                           {product.supplier.address && (
@@ -1767,7 +1777,9 @@ const SingleProductPage = () => {
                       <label className="block text-sm font-medium text-gray-500 mb-2 dark:text-gray-400">
                         Purchase Price
                       </label>
-                      <p className="text-2xl font-bold">৳{product.purchasePrice}</p>
+                      <p className="text-2xl font-bold">
+                        ৳{product.purchasePrice}
+                      </p>
                       <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
                         Cost Price
                       </p>
@@ -1825,7 +1837,9 @@ const SingleProductPage = () => {
                         {product.created_by || "System"}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {product.createdAt ? formatDate(product.createdAt) : "N/A"}
+                        {product.createdAt
+                          ? formatDate(product.createdAt)
+                          : "N/A"}
                       </p>
                     </div>
 
@@ -1840,7 +1854,9 @@ const SingleProductPage = () => {
                         {product.updated_by || "Not updated"}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {product.updatedAt ? formatDate(product.updatedAt) : "N/A"}
+                        {product.updatedAt
+                          ? formatDate(product.updatedAt)
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -1877,7 +1893,8 @@ const SingleProductPage = () => {
 
                   {product.useIndividualSerials ? (
                     <div className="space-y-4">
-                      {product.productSerials && product.productSerials.length > 0 ? (
+                      {product.productSerials &&
+                      product.productSerials.length > 0 ? (
                         <>
                           <div className="flex flex-wrap gap-2 mb-4">
                             {product.productSerials.map((serial, index) => (
@@ -1906,31 +1923,57 @@ const SingleProductPage = () => {
 
                           {/* Summary */}
                           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <h4 className="font-medium mb-3 dark:text-white">Summary</h4>
+                            <h4 className="font-medium mb-3 dark:text-white">
+                              Summary
+                            </h4>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                                  {product.productSerials.filter(s => s.status === "Available").length}
+                                  {
+                                    product.productSerials.filter(
+                                      (s) => s.status === "Available"
+                                    ).length
+                                  }
                                 </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">Available</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  Available
+                                </div>
                               </div>
                               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                                  {product.productSerials.filter(s => s.status === "Sold").length}
+                                  {
+                                    product.productSerials.filter(
+                                      (s) => s.status === "Sold"
+                                    ).length
+                                  }
                                 </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">Sold</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  Sold
+                                </div>
                               </div>
                               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                                  {product.productSerials.filter(s => s.warranty === "Yes").length}
+                                  {
+                                    product.productSerials.filter(
+                                      (s) => s.warranty === "Yes"
+                                    ).length
+                                  }
                                 </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">With Warranty</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  With Warranty
+                                </div>
                               </div>
                               <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                                  {product.productSerials.filter(s => s.warranty === "No").length}
+                                  {
+                                    product.productSerials.filter(
+                                      (s) => s.warranty === "No"
+                                    ).length
+                                  }
                                 </div>
-                                <div className="text-sm text-gray-600 dark:text-gray-400">No Warranty</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  No Warranty
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1948,31 +1991,16 @@ const SingleProductPage = () => {
                           Bulk Serial Number
                         </label>
                         <p className="text-lg font-mono dark:text-white">
-                          {product.serial || "No bulk serial"}
+                          {"No bulk serial"}
                         </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-500 mb-1 dark:text-gray-400">
                           Warranty Status
                         </label>
-                        <span
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-                            product.warranty === "Yes"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                          }`}
-                        >
-                          {product.warranty === "Yes" ? (
-                            <>
-                              <ShieldCheck className="w-4 h-4" />
-                              All {product.quantity} items with warranty
-                            </>
-                          ) : (
-                            <>
-                              <ShieldX className="w-4 h-4" />
-                              All {product.quantity} items without warranty
-                            </>
-                          )}
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                          <ShieldX className="w-4 h-4" />
+                          All {product.quantity} items without warranty
                         </span>
                       </div>
                     </div>

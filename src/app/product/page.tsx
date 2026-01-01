@@ -384,11 +384,11 @@ const ProductsPage = () => {
       // Set warranty from first serial (they should all be the same)
       // Or use product.warranty if it exists
       setSelectedWarranty(
-        product.warranty || product.productSerials[0]?.warranty || "No"
+        product.productSerials[0]?.warranty || "No"
       );
     } else {
       // For non-serialized products
-      setSelectedWarranty(product.warranty as "Yes" | "No");
+      // setSelectedWarranty(product.warranty as "Yes" | "No");
       setIndividualSerials([]);
     }
 
@@ -875,7 +875,7 @@ const ProductsPage = () => {
             >
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  ID
+                  No
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Name
@@ -1026,7 +1026,7 @@ const ProductsPage = () => {
                         </span>
                       )}
                     </div>
-                  </td>{" "}
+                  </td>
                   {/* Supplier Information */}
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium">

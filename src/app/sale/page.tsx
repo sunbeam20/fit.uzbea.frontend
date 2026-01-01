@@ -27,6 +27,7 @@ import {
   useGetProductsQuery,
   useGetCustomersQuery,
 } from "@/state/api";
+import { create, update } from "lodash";
 
 interface SaleItem {
   id: number;
@@ -122,6 +123,8 @@ const SalesPage = () => {
       total: number;
     }>,
     dueDate: new Date().toISOString().split("T")[0],
+    created_at: "",
+    updated_at: "",
   });
 
   // Dropdown states
@@ -231,6 +234,8 @@ const SalesPage = () => {
       status: "pending",
       items: [],
       dueDate: new Date().toISOString().split("T")[0],
+      created_at: "",
+      updated_at: "",
     });
     setEditingSale(null);
     setShowSaleModal(true);
@@ -243,6 +248,9 @@ const SalesPage = () => {
       customerPhone: sale.Customers?.phone || "",
       customerAddress: sale.Customers?.address || "",
       paymentMethod: "cash", // You might want to add this field to your Sale model
+      created_at: sale.created_at,
+      updated_at: sale.updated_at,
+
       status:
         Number(sale.totalPaid) >= Number(sale.totalAmount)
           ? "completed"
@@ -253,7 +261,7 @@ const SalesPage = () => {
         price: Number(item.unitPrice),
         total: item.quantity * Number(item.unitPrice),
       })),
-      dueDate: sale.dueDate.split("T")[0],
+      dueDate: sale.dueDate ? sale.dueDate.split("T")[0] : "",
     });
     setEditingSale(sale);
     setShowSaleModal(true);
@@ -651,7 +659,7 @@ const SalesPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm">
-                        {new Date(sale.created_at).toLocaleDateString()}
+                        {new Date(sale.createdAt).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -679,7 +687,7 @@ const SalesPage = () => {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleEditSale(sale)}
+                          onClick={() => handleEditSale(sale)}  
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                         >
                           <Edit className="w-4 h-4" />

@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface Product {
   id: number;
+  productCode: string; // Added from schema
   name: string;
   specification?: string | null;
   description?: string | null;
@@ -9,13 +10,11 @@ export interface Product {
   purchasePrice: number;
   wholesalePrice: number;
   retailPrice: number;
-  serial?: string; // Bulk serial (optional)
-  warranty: "Yes" | "No";
+  useIndividualSerials: boolean;
   productType: "New" | "PreOwned";
-  status: "Active" | "Unavailable";
+  status: "Active" | "Unavailable" | "Discontinued"; // Updated from schema
   category_id: number;
   supplier_id?: number;
-  useIndividualSerials: boolean;
   created_by?: number;
   updated_by?: number;
   createdAt: string;
@@ -26,6 +25,7 @@ export interface Product {
   };
   supplier?: {
     id: number;
+    suppId?: string; // Added from schema
     name: string;
     email?: string;
     phone: string;
@@ -34,17 +34,19 @@ export interface Product {
   productSerials?: ProductSerial[];
   creator?: {
     id: number;
+    userId?: string; // Added from schema
     name: string;
     email: string;
   };
   updater?: {
     id: number;
+    userId?: string; // Added from schema
     name: string;
     email: string;
   };
 }
+
 export interface ProductSerial {
-  warranty: string;
   id: number;
   serial: string;
   product_id: number;
@@ -55,10 +57,12 @@ export interface ProductSerial {
     | "Unavailable"
     | "InService"
     | "Exchanged";
-  sale_id?: number;
+  warranty: "Yes" | "No"; // Added from schema
   createdAt: string;
   updatedAt: string;
+  // Note: sale_id doesn't exist in schema - sales are tracked through SalesItemSerials junction table
 }
+
 export interface CreateProductRequest {
   name: string;
   specification?: string;
@@ -67,155 +71,197 @@ export interface CreateProductRequest {
   purchasePrice: number;
   wholesalePrice: number;
   retailPrice: number;
-  warranty: "Yes" | "No";
+  warranty?: "Yes" | "No"; // Optional product-level warranty
   productType: "New" | "PreOwned";
   category_id: number;
   useIndividualSerials: boolean;
   bulkSerial?: string; // For non-serialized products
   individualSerials?: string[]; // Array of serials for serialized products
+  serials?: Array<{
+    // Added for serialized products with warranty
+    serial: string;
+    warranty?: "Yes" | "No";
+  }>;
+  supplier_id?: number;
+  userId?: number; // For created_by field
 }
+
 export interface Category {
   id: number;
   name: string;
 }
-export interface SaleSummary {
-  created_at: string;
-  id: number;
-  totalAmount: number;
-  totalPaid: number;
-  dueDate: string;
-  customer_id?: number;
-  user_id: number;
-}
-export interface SaleItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  unitPrice: number;
-  Products: {
-    id: number;
-    name: string;
-    specification?: string;
-    retailPrice: number;
-    wholesalePrice: number;
-    purchasePrice: number;
-  };
-}
+
 export interface Sale {
   id: number;
+  saleNo: string; // Added from schema
   totalAmount: number;
   totalPaid: number;
-  dueDate: string;
-  customer_id: number;
+  totaldiscount?: number; // Added from schema
+  dueDate?: string;
+  customer_id?: number;
   user_id: number;
-  Customers: {
+  status?: "Pending" | "Completed" | "Cancelled"; // Added from schema
+  createdAt: string;
+  updatedAt: string;
+  Customers?: {
     id: number;
+    custId?: string; // Added from schema
     name: string;
     email?: string;
     phone: string;
     address?: string;
   };
-  Users: {
+  Users?: {
     id: number;
+    userId?: string; // Added from schema
     name: string;
     email: string;
   };
   SalesItems: SaleItem[];
-  created_at: string;
-  updated_at: string;
 }
+
+export interface SaleItem {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  discount?: number;
+  sales_id: number;
+  product_id: number;
+  Products?: {
+    id: number;
+    productCode?: string; // Added from schema
+    name: string;
+    specification?: string;
+    retailPrice: number;
+    wholesalePrice: number;
+    purchasePrice: number;
+    useIndividualSerials: boolean;
+  };
+  salesItemSerials?: Array<{
+    // Added for serial tracking
+    id: number;
+    salesItem_id: number;
+    serial_id: number;
+    ProductSerials?: ProductSerial;
+  }>;
+}
+
 export interface CreateSaleRequest {
-  customer_id: number;
+  customer_id?: number;
   user_id: number;
   totalAmount: number;
   totalPaid?: number;
-  dueDate: string;
+  totaldiscount?: number; // Added from schema
+  dueDate?: string;
   items: Array<{
     product_id: number;
     quantity: number;
     unitPrice: number;
+    serials?: string[]; // For serialized products
   }>;
 }
+
 export interface UpdateSaleRequest {
   totalPaid?: number;
   dueDate?: string;
   customer_id?: number;
   user_id?: number;
+  totaldiscount?: number; // Added from schema
 }
+
 export interface SalesStats {
   totalSales: number;
   totalRevenue: number;
   totalPaid: number;
+  totalDiscount?: number; // Added from schema
   pendingSales: number;
   completedSales: number;
   totalDue: number;
+  netRevenue?: number; // Added: totalRevenue - totalDiscount
 }
-export interface SalesReturnItem {
-  id: number;
-  product_id: number;
-  product_name: string;
-  quantity: number;
-  price: number;
-  return_reason: string;
-}
+
 export interface SalesReturn {
   id: number;
-  return_number: string;
-  original_invoice: string;
-  customer_name: string;
-  customer_phone?: string;
-  customer_address?: string;
-  date: string;
-  total_amount: number;
-  reason: string;
-  status: "completed" | "pending" | "rejected";
-  refund_method: string;
-  items: SalesReturnItem[];
-  created_at: string;
-  updated_at: string;
-}
-export interface PurchaseSummary {
-  created_at: string;
-  id: number;
-  totalAmount: number;
-  totalPaid: number;
-  dueDate: string;
-  note?: string;
-  supplier_id: number;
+  returnNo: string; // Added from schema (SR-00001 format)
+  total_payback: number;
+  note: string;
+  sales_id: number;
   user_id: number;
+  customer_id: number;
+  createdAt: string;
+  updatedAt: string;
+  Sales?: Sale;
+  Users?: {
+    id: number;
+    userId?: string; // Added from schema
+    name: string;
+    email: string;
+  };
+  Customers?: {
+    id: number;
+    custId?: string; // Added from schema
+    name: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
+  SalesReturnItems?: SalesReturnItem[];
 }
-export interface PurchaseItem {
+
+export interface SalesReturnItem {
   id: number;
-  product_id: number;
-  product_name: string;
   quantity: number;
-  price: number;
   unitPrice: number;
-  total: number;
+  product_id: number;
+  salesReturn_id: number;
+  productSerialsId?: number; // Added from schema
   Products?: Product;
+  salesReturnItemSerials?: Array<{
+    // Added from schema
+    id: number;
+    salesReturnItem_id: number;
+    serial_id: number;
+    ProductSerials?: ProductSerial;
+  }>;
 }
+
 export interface Purchase {
   id: number;
-  invoice_number?: string; // You might want to add this field to your schema
-  supplier_name?: string;
-  supplier_id: number;
-  user_id: number;
+  purchaseNo: string; // Added from schema (P-00001 format)
   totalAmount: number;
   totalPaid: number;
   dueDate: string;
   note?: string;
-  status?: "pending" | "received" | "cancelled"; // You might want to add this field
-  payment_status?: "pending" | "paid" | "overdue"; // You might want to add this field
-  created_at: string;
-  updated_at: string;
+  supplier_id: number;
+  user_id: number;
+  createdAt: string;
+  updatedAt: string;
   Suppliers?: Supplier;
   Users?: {
     id: number;
+    userId?: string; // Added from schema
     name: string;
     email: string;
   };
   PurchasesItems: PurchaseItem[];
 }
+
+export interface PurchaseItem {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  purchase_id: number;
+  product_id: number;
+  Products?: Product;
+  purchaseItemSerials?: Array<{
+    // Added from schema
+    id: number;
+    purchaseItem_id: number;
+    serial_id: number;
+    ProductSerials?: ProductSerial;
+  }>;
+}
+
 export interface CreatePurchaseData {
   totalAmount: number;
   totalPaid: number;
@@ -227,8 +273,10 @@ export interface CreatePurchaseData {
     product_id: number;
     quantity: number;
     unitPrice: number;
+    serials?: string[]; // For serialized products
   }>;
 }
+
 export interface UpdatePurchaseData {
   totalAmount?: number;
   totalPaid?: number;
@@ -241,14 +289,228 @@ export interface UpdatePurchaseData {
     unitPrice: number;
   }>;
 }
+
 export interface Supplier {
   id: number;
+  suppId?: string; // Added from schema
   name: string;
   email?: string;
   phone: string;
   address?: string;
 }
+
+export interface PurchaseReturn {
+  id: number;
+  returnNo: string; // Added from schema (PUR-00001 format)
+  totalPaid: number;
+  note: string;
+  purchase_id: number;
+  user_id: number;
+  supplier_id: number;
+  createdAt: string;
+  updatedAt: string;
+  Purchases?: Purchase;
+  Users?: {
+    id: number;
+    userId?: string; // Added from schema
+    name: string;
+    email: string;
+  };
+  Suppliers?: Supplier;
+  PurchasesReturnItems?: PurchaseReturnItem[];
+}
+
 export interface PurchaseReturnItem {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  products_id: number;
+  purchaseReturn_id: number;
+  Products?: Product;
+  purchaseReturnItemSerials?: Array<{
+    // Added from schema
+    id: number;
+    purchaseReturnItem_id: number;
+    serial_id: number;
+    ProductSerials?: ProductSerial;
+  }>;
+}
+
+export interface Exchange {
+  id: number;
+  exchangeNo: string; // Added from schema (EX-00001 format)
+  totalPaid: number;
+  totalPayback: number;
+  note: string;
+  sales_id: number;
+  user_id: number;
+  customer_id: number;
+  createdAt: string;
+  updatedAt: string;
+  Sales?: Sale;
+  Users?: {
+    id: number;
+    userId?: string; // Added from schema
+    name: string;
+    email: string;
+  };
+  Customers?: {
+    id: number;
+    custId?: string; // Added from schema
+    name: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
+  ExchangeItems?: ExchangeItem[];
+}
+
+export interface ExchangeItem {
+  id: number;
+  quantity: number;
+  unitPrice: number;
+  note: string;
+  oldProduct_id: number;
+  newProduct_id: number;
+  exchangeId?: number;
+  createdAt: string;
+  updatedAt: string;
+  oldProduct?: Product;
+  newProduct?: Product;
+  exchangeItemSerials?: Array<{
+    // Added from schema
+    id: number;
+    exchangeItem_id: number;
+    serial_id_old: number;
+    serial_id_new: number;
+    OldProductSerials?: ProductSerial;
+    NewProductSerials?: ProductSerial;
+  }>;
+}
+
+export interface Service {
+  id: number;
+  serviceNo: string; // Added from schema (SV-00001 format)
+  serviceProductName: string;
+  serviceDescription: string;
+  serviceCost: number;
+  serviceStatus: string;
+  customer_id?: number;
+  user_id?: number;
+  createdAt: string;
+  updatedAt: string;
+  Customers?: {
+    id: number;
+    custId?: string; // Added from schema
+    name: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
+  Users?: {
+    id: number;
+    userId?: string; // Added from schema
+    name: string;
+    email: string;
+  };
+}
+
+export interface Customer {
+  id: number;
+  custId?: string; // Added from schema
+  name: string;
+  email?: string;
+  phone: string;
+  address?: string;
+  Sales?: Array<{
+    id: number;
+    saleNo?: string; // Added from schema
+    totalAmount: number;
+    totalPaid: number;
+    createdAt: string;
+  }>;
+  SalesReturn?: Array<{
+    id: number;
+    returnNo?: string; // Added from schema
+    total_payback: number;
+    createdAt: string;
+  }>;
+  Exchanges?: Array<{
+    id: number;
+    exchangeNo?: string; // Added from schema
+    totalPaid: number;
+    totalPayback: number;
+    createdAt: string;
+  }>;
+  Services?: Array<{
+    id: number;
+    serviceNo?: string; // Added from schema
+    serviceProductName: string;
+    serviceCost: number;
+    serviceStatus: string;
+  }>;
+}
+
+export interface CreateCustomerRequest {
+  name: string;
+  email?: string;
+  phone: string;
+  address?: string;
+}
+
+export interface UpdateCustomerRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface User {
+  id: number;
+  userId?: string; // Added from schema
+  name: string;
+  email: string;
+  password?: string; // Only for create/update
+  status: "Active" | "Inactive"; // From schema enum
+  role_id: number;
+  createdAt: string;
+  updatedAt: string;
+  Roles?: {
+    id: number;
+    name: string;
+  };
+}
+
+// For backward compatibility - keep existing interfaces but add missing properties
+export interface SaleSummary extends Omit<Sale, "SalesItems"> {
+  created_at: string;
+}
+
+export interface PurchaseSummary extends Omit<Purchase, "PurchasesItems"> {
+  created_at: string;
+}
+
+export interface ExchangeSummary extends Omit<Exchange, "ExchangeItems"> {
+  created_at: string;
+}
+
+export interface ServiceSummary extends Omit<Service, "Customers" | "Users"> {}
+
+export interface CreateSalesReturnRequest {
+  sales_id: number;
+  user_id: number;
+  customer_id: number;
+  total_payback?: number;
+  note: string;
+  items?: Array<{
+    product_id: number;
+    quantity: number;
+    unitPrice: number;
+    productSerialsId?: number;
+  }>;
+}
+
+export interface SalesReturnItemFrontend {
   id: number;
   product_id: number;
   product_name: string;
@@ -256,8 +518,35 @@ export interface PurchaseReturnItem {
   price: number;
   return_reason: string;
 }
-export interface PurchaseReturn {
+
+export interface SalesReturnFrontend
+  extends Omit<SalesReturn, "SalesReturnItems"> {
+  return_number: string;
+  original_invoice: string;
+  customer_name: string;
+  customer_phone?: string;
+  customer_address?: string;
+  date: string;
+  total_amount: number;
+  reason: string;
+  status: "completed" | "pending" | "rejected";
+  refund_method: string;
+  items: SalesReturnItemFrontend[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseReturnItemFrontend {
   id: number;
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price: number;
+  return_reason: string;
+}
+
+export interface PurchaseReturnFrontend
+  extends Omit<PurchaseReturn, "PurchasesReturnItems"> {
   return_number: string;
   original_invoice: string;
   supplier_name: string;
@@ -268,21 +557,12 @@ export interface PurchaseReturn {
   reason: string;
   status: "completed" | "pending" | "rejected";
   refund_method: string;
-  items: PurchaseReturnItem[];
+  items: PurchaseReturnItemFrontend[];
   created_at: string;
   updated_at: string;
 }
-export interface ExchangeSummary {
-  created_at: string;
-  id: number;
-  totalPaid: number;
-  totalPayback: number;
-  note: string;
-  sales_id: number;
-  user_id: number;
-  customer_id: number;
-}
-export interface ExchangeItem {
+
+export interface ExchangeItemFrontend {
   id: number;
   old_product_id: number;
   old_product_name: string;
@@ -292,8 +572,8 @@ export interface ExchangeItem {
   unit_price: number;
   note: string;
 }
-export interface Exchange {
-  id: number;
+
+export interface ExchangeFrontend extends Omit<Exchange, "ExchangeItems"> {
   exchange_number: string;
   original_invoice: string;
   customer_name: string;
@@ -305,21 +585,12 @@ export interface Exchange {
   net_amount: number;
   reason: string;
   status: string;
-  items: ExchangeItem[];
+  items: ExchangeItemFrontend[];
   created_at: string;
   updated_at: string;
 }
-export interface ServiceSummary {
-  id: number;
-  serviceProductName: string;
-  serviceDescription: string;
-  serviceCost: number;
-  serviceStatus: string;
-  customer_id?: number;
-  user_id?: number;
-}
-export interface Service {
-  id: number;
+
+export interface ServiceFrontend extends Omit<Service, "Customers" | "Users"> {
   service_number: string;
   customer_name: string;
   customer_phone?: string;
@@ -333,48 +604,8 @@ export interface Service {
   created_at: string;
   updated_at: string;
 }
-export interface Customer {
-  id: number;
-  name: string;
-  email?: string;
-  phone: string;
-  address?: string;
-  Sales: Array<{
-    id: number;
-    totalAmount: number;
-    totalPaid: number;
-    created_at: string;
-  }>;
-  SalesReturn: Array<{
-    id: number;
-    total_payback: number;
-    created_at: string;
-  }>;
-  Exchanges: Array<{
-    id: number;
-    totalPaid: number;
-    totalPayback: number;
-    created_at: string;
-  }>;
-  Services: Array<{
-    id: number;
-    serviceProductName: string;
-    serviceCost: number;
-    serviceStatus: string;
-  }>;
-}
-export interface CreateCustomerRequest {
-  name: string;
-  email?: string;
-  phone: string;
-  address?: string;
-}
-export interface UpdateCustomerRequest {
-  name?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-}
+
+// Other existing interfaces remain the same...
 export interface CustomerStats {
   totalCustomers: number;
   customersWithSales: number;
@@ -386,6 +617,7 @@ export interface CustomerStats {
     totalRevenue: number;
   }>;
 }
+
 export interface PaginatedCustomersResponse {
   customers: Customer[];
   totalCount: number;
@@ -394,6 +626,7 @@ export interface PaginatedCustomersResponse {
   hasNext: boolean;
   hasPrev: boolean;
 }
+
 export interface DashboardMetrics {
   popularProducts: Product[];
   saleSummary: SaleSummary[];
@@ -401,6 +634,7 @@ export interface DashboardMetrics {
   exchangeSummary: ExchangeSummary[];
   serviceSummary: ServiceSummary[];
 }
+
 export interface Transaction {
   id: number;
   date: string;
@@ -413,19 +647,11 @@ export interface Transaction {
   status?: string;
 }
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
 export interface LoginRequest {
   email: string;
   password: string;
 }
+
 export interface RegisterRequest {
   name: string;
   email: string;
@@ -433,6 +659,7 @@ export interface RegisterRequest {
   password_confirmation: string;
   role_id?: number;
 }
+
 export interface AuthResponse {
   user: User;
   token: string;
@@ -440,7 +667,7 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://fit-uzbea-backend.vercel.app/api/" || "/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json");
       const token =
@@ -476,14 +703,21 @@ export const api = createApi({
       providesTags: ["DashboardMetrics"],
     }),
 
-    // Products Search
+    // For products search
     searchProducts: build.query<Product[], string>({
-      query: (search) => `/product/search?q=${search}`,
+      query: (searchTerm) => ({
+        url: `product/search`,
+        params: { query: searchTerm },
+      }),
       providesTags: ["Product"],
     }),
-    // Customers Search
+
+    // For customers search
     searchCustomers: build.query<Customer[], string>({
-      query: (search) => `/customer/search?q=${search}`,
+      query: (searchTerm) => ({
+        url: `customer/search`,
+        params: { query: searchTerm },
+      }),
       providesTags: ["Customer"],
     }),
     createSaleFromPOS: build.mutation<
@@ -505,7 +739,7 @@ export const api = createApi({
       }
     >({
       query: (saleData) => ({
-        url: "/sale/pos",
+        url: "/sale",
         method: "POST",
         body: saleData,
       }),
@@ -670,7 +904,7 @@ export const api = createApi({
       query: (id) => `salesreturn/${id}`,
       providesTags: (result, error, id) => [{ type: "SalesReturn", id }],
     }),
-    createSalesReturn: build.mutation<SalesReturn, Partial<SalesReturn>>({
+    createSalesReturn: build.mutation<SalesReturn, CreateSalesReturnRequest>({
       query: (salesReturn) => ({
         url: "salesreturn",
         method: "POST",
@@ -973,6 +1207,60 @@ export const api = createApi({
       }),
       invalidatesTags: ["Supplier"],
     }),
+    // For sales search
+    searchSales: build.query<Sale[], string>({
+      query: (searchTerm) =>
+        `sale/search?query=${encodeURIComponent(searchTerm)}`,
+      // transformResponse: (response: { success: boolean; data: Sale[] }) => {
+      //   return response.data || [];
+      // },
+      providesTags: ["Sale"],
+    }),
+    // For purchases search
+    searchPurchases: build.query<Purchase[], string>({
+      query: (searchTerm) =>
+        `purchase/search?query=${encodeURIComponent(searchTerm)}`,
+      // transformResponse: (response: { success: boolean; data: Purchase[] }) => {
+      //   console.log("Purchase Search API Response:", response);
+      //   return response.data || [];
+      // },
+      providesTags: ["Purchase"],
+    }),
+
+    getProductSerials: build.query<ProductSerial[], number>({
+      query: (productId) => `/product/${productId}/serials`,
+      providesTags: (result, error, productId) => [
+        { type: "Product", id: productId },
+      ],
+    }),
+
+    // Get serials by product ID and status
+    getAvailableSerials: build.query<
+      ProductSerial[],
+      { productId: number; status?: string }
+    >({
+      query: ({ productId, status = "Available" }) =>
+        `/product/${productId}/serials?status=${status}`,
+      providesTags: (result, error, { productId }) => [
+        { type: "Product", id: productId },
+      ],
+    }),
+
+    // Get sale by invoice number
+    getSaleByInvoice: build.query<Sale, string>({
+      query: (invoiceNumber) => `/sale/invoice/${invoiceNumber}`,
+      providesTags: (result, error, invoiceNumber) => [
+        { type: "Sale", invoiceNumber },
+      ],
+    }),
+
+    // Get purchase by invoice number
+    getPurchaseByInvoice: build.query<Purchase, string>({
+      query: (invoiceNumber) => `/purchase/invoice/${invoiceNumber}`,
+      providesTags: (result, error, invoiceNumber) => [
+        { type: "Purchase", invoiceNumber },
+      ],
+    }),
   }),
 });
 
@@ -1047,4 +1335,10 @@ export const {
   useCreateSupplierMutation,
   useUpdateSupplierMutation,
   useDeleteSupplierMutation,
+  useSearchSalesQuery,
+  useSearchPurchasesQuery,
+  useGetProductSerialsQuery,
+  useGetAvailableSerialsQuery,
+  useGetSaleByInvoiceQuery,
+  useGetPurchaseByInvoiceQuery,
 } = api;

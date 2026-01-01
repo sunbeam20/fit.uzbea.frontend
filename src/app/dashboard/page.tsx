@@ -9,14 +9,17 @@ import CardStats from "./CardStats";
 import { useAppSelector } from "../redux";
 import logo from "../../../public/floppy.jpg";
 import Image from "next/image";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/redux";
 
 const Dashboard = () => {
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const showPanel = useAppSelector((state) => state.global.isPOSPanelOpen);
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   return (
     <>
-      {showPanel ? (
+      {showPanel && isAuthenticated ? (
         <div
           className={`fixed inset-0 flex items-center justify-center ${
             isDarkMode ? "bg-black" : "invert"

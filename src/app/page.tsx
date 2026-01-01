@@ -3,8 +3,9 @@ import Dashboard from "@/app/dashboard/page";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
-import { RootState } from "@/app/redux";
+import { useAppDispatch, RootState, useAppSelector } from "@/app/redux";
 import Link from "next/link";
+import { setIsPOSPanelOpen } from "@/state";
 
 export default function Home() {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -20,7 +21,7 @@ export default function Home() {
       //     </Link>
       //   </div>
       // </div>
-      <Dashboard/>
+      <Dashboard />
     );
   }
 
