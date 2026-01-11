@@ -77,8 +77,8 @@ const Sidebar = () => {
     isSidebarCollapsed ? "w-0 md:w-12" : "w-55 md:w-60"
   } ${
     isDarkMode
-      ? "border bg-black border-gray-700"
-      : "border bg-white border-gray-200"
+      ? "border bg-gray-800/50 border-gray-700"
+      : "border bg-white/50 border-gray-200"
   }`;
 
   return (
@@ -86,7 +86,7 @@ const Sidebar = () => {
       {/* Links */}
       <div className="flex-grow">
         <SidebarLink
-          href="/dashboard"
+          href="/"
           icon={Layout}
           label="Dashboard"
           isCollapsed={isSidebarCollapsed}
@@ -133,30 +133,30 @@ const Sidebar = () => {
           label="Service"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/enquiry"
           icon={PackageSearch}
           label="Enquiry"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
           href="/expenses"
           icon={CircleDollarSign}
           label="Expenses"
           isCollapsed={isSidebarCollapsed}
         />
-        <SidebarLink
+        {/* <SidebarLink
           href="/delivery"
           icon={Truck}
           label="Delivery"
           isCollapsed={isSidebarCollapsed}
-        />
-        <SidebarLink
+        /> */}
+        {/* <SidebarLink
           href="/users"
           icon={User}
           label="User"
           isCollapsed={isSidebarCollapsed}
-        />
+        /> */}
         <SidebarLink
           href="/settings"
           icon={Settings}

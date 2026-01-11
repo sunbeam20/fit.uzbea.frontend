@@ -48,6 +48,7 @@ import {
   useCreateSupplierMutation,
   useCreateCategoryMutation,
 } from "@/state/api";
+import ProviderWrapper from "@/app/(components)/ProviderWrapper";
 
 // Define the Transaction interface
 interface Transaction {
@@ -1527,6 +1528,7 @@ const SingleProductPage = () => {
   );
 
   return (
+    <ProviderWrapper>
     <div
       className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
         isDarkMode
@@ -2281,6 +2283,7 @@ const SingleProductPage = () => {
         </div>
       )}
     </div>
+    </ProviderWrapper>
   );
 };
 

@@ -8,7 +8,7 @@ import {
   Provider,
 } from "react-redux";
 import globalReducer from "@/state";
-import authReducer from "@/state/authSlice"; 
+import authReducer from "@/state/authSlice";
 import { api } from "@/state/api";
 import { setupListeners } from "@reduxjs/toolkit/query";
 
@@ -48,7 +48,7 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["global", "auth"],
+  whitelist: ["global"],
 };
 const rootReducer = combineReducers({
   global: globalReducer,
@@ -79,7 +79,7 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
 const DebugReduxState = () => {
   const state = useSelector((state: RootState) => state);
-  console.log('Redux State:', state);
+  console.log("Redux State:", state);
   return null;
 };
 

@@ -7,13 +7,17 @@ import {
   RefreshCw,
   ListChecks,
   Package,
-  TrendingDown
+  TrendingDown,
+  Users
 } from "lucide-react";
 import React from "react";
 import numeral from "numeral";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/redux";
 
 const CardStats = () => {
   const { data: dashboardMetrics, isLoading } = useGetDashboardMetricsQuery();
+  const isDarkMode = useSelector((state: RootState) => state.global.isDarkMode);
 
   const stats = React.useMemo(() => {
     if (!dashboardMetrics) return [];
@@ -40,50 +44,138 @@ const CardStats = () => {
       {
         title: "Total Sales",
         value: totalSales,
-        icon: <ShoppingBag className="w-5 h-5" />,
-        color: "text-blue-600",
-        bgColor: "bg-blue-100",
+        icon: ShoppingBag,
+        color: "blue",
         change: "+15.3%",
         trend: "up" as const,
       },
       {
         title: "Total Purchases",
         value: totalPurchases,
-        icon: <Package className="w-5 h-5" />,
-        color: "text-green-600",
-        bgColor: "bg-green-100",
+        icon: Package,
+        color: "green",
         change: "+8.2%",
         trend: "up" as const,
       },
       {
         title: "Total Exchanges",
         value: totalExchanges,
-        icon: <RefreshCw className="w-5 h-5" />,
-        color: "text-purple-600",
-        bgColor: "bg-purple-100",
+        icon: RefreshCw,
+        color: "purple",
         change: "+3.4%",
         trend: "up" as const,
       },
       {
         title: "Services Revenue",
         value: totalServices,
-        icon: <ListChecks className="w-5 h-5" />,
-        color: "text-orange-600",
-        bgColor: "bg-orange-100",
+        icon: ListChecks,
+        color: "orange",
         change: "+15.7%",
         trend: "up" as const,
       },
     ];
   }, [dashboardMetrics]);
 
+  // Color configuration for light and dark modes
+  const colorConfig = {
+    blue: {
+      light: {
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+        text: "text-blue-900",
+        iconBg: "bg-blue-100",
+        iconColor: "text-blue-600",
+      },
+      dark: {
+        bg: "bg-blue-900/30",
+        border: "border-blue-800",
+        text: "text-white",
+        iconBg: "bg-blue-800/50",
+        iconColor: "text-blue-300",
+      }
+    },
+    green: {
+      light: {
+        bg: "bg-green-50",
+        border: "border-green-200",
+        text: "text-green-900",
+        iconBg: "bg-green-100",
+        iconColor: "text-green-600",
+      },
+      dark: {
+        bg: "bg-green-900/30",
+        border: "border-green-800",
+        text: "text-white",
+        iconBg: "bg-green-800/50",
+        iconColor: "text-green-300",
+      }
+    },
+    purple: {
+      light: {
+        bg: "bg-purple-50",
+        border: "border-purple-200",
+        text: "text-purple-900",
+        iconBg: "bg-purple-100",
+        iconColor: "text-purple-600",
+      },
+      dark: {
+        bg: "bg-purple-900/30",
+        border: "border-purple-800",
+        text: "text-white",
+        iconBg: "bg-purple-800/50",
+        iconColor: "text-purple-300",
+      }
+    },
+    orange: {
+      light: {
+        bg: "bg-orange-50",
+        border: "border-orange-200",
+        text: "text-orange-900",
+        iconBg: "bg-orange-100",
+        iconColor: "text-orange-600",
+      },
+      dark: {
+        bg: "bg-orange-900/30",
+        border: "border-orange-800",
+        text: "text-white",
+        iconBg: "bg-orange-800/50",
+        iconColor: "text-orange-300",
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="shadow-lg rounded-2xl border p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-8 bg-gray-300 rounded w-2/3 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+          <div 
+            key={i} 
+            className={`rounded-xl p-6 shadow-lg border ${
+              isDarkMode
+                ? "bg-gray-800/30 border-gray-700"
+                : "bg-gray-50 border-gray-200"
+            } animate-pulse`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-full">
+                <div className={`h-4 rounded w-1/3 mb-4 ${
+                  isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                }`}></div>
+                <div className={`h-8 rounded w-2/3 mb-2 ${
+                  isDarkMode ? "bg-gray-600" : "bg-gray-300"
+                }`}></div>
+                <div className={`h-3 rounded w-1/2 ${
+                  isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                }`}></div>
+              </div>
+              <div className={`p-3 rounded-lg ${
+                isDarkMode ? "bg-gray-700/50" : "bg-gray-100"
+              }`}>
+                <div className={`w-6 h-6 ${
+                  isDarkMode ? "bg-gray-600" : "bg-gray-300"
+                } rounded`}></div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -92,42 +184,48 @@ const CardStats = () => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat, index) => (
-        <div
-          key={index}
-          className={`shadow-lg rounded-2xl p-6 transition-all duration-300 hover:shadow-xl ${stat.bgColor}`}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-              <div className={stat.color}>
-                {stat.icon}
+      {stats.map((stat, index) => {
+        const colors = colorConfig[stat.color as keyof typeof colorConfig];
+        const themeColors = isDarkMode ? colors.dark : colors.light;
+        const IconComponent = stat.icon;
+
+        return (
+          <div
+            key={index}
+            className={`rounded-xl p-6 shadow-lg border transition-all duration-300 hover:shadow-xl ${
+              themeColors.bg
+            } ${themeColors.border} ${themeColors.text}`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">{stat.title}</p>
+                <p className="text-3xl font-bold mt-2">
+                  {numeral(stat.value).format("0,0.00")} ৳
+                </p>
+                <div className="text-sm font-medium mt-2">
+                  <span className={`inline-flex items-center ${
+                    stat.trend === 'up' 
+                      ? (isDarkMode ? 'text-green-300' : 'text-green-600')
+                      : stat.trend === 'down'
+                      ? (isDarkMode ? 'text-red-300' : 'text-red-600')
+                      : (isDarkMode ? 'text-gray-300' : 'text-gray-600')
+                  }`}>
+                    {stat.trend === 'up' ? (
+                      <TrendingUp className="w-4 h-4 mr-1" />
+                    ) : stat.trend === 'down' ? (
+                      <TrendingDown className="w-4 h-4 mr-1" />
+                    ) : null}
+                    {stat.change}
+                  </span>
+                </div>
+              </div>
+              <div className={`p-3 rounded-lg ${themeColors.iconBg}`}>
+                <IconComponent className={`w-6 h-6 ${themeColors.iconColor}`} />
               </div>
             </div>
-            <div className="text-sm font-medium">
-              <span className={`inline-flex items-center ${
-                stat.trend === 'up' 
-                  ? 'text-green-600' 
-                  : stat.trend === 'down'
-                  ? 'text-red-600'
-                  : 'text-gray-600'
-              }`}>
-                {stat.trend === 'up' ? (
-                  <TrendingUp className="w-4 h-4 mr-1" />
-                ) : stat.trend === 'down' ? (
-                  <TrendingDown className="w-4 h-4 mr-1" />
-                ) : null}
-                {stat.change}
-              </span>
-            </div>
           </div>
-          <h3 className="text-2xl font-bold mb-1 text-black">
-            {numeral(stat.value).format("0,0.00")} ৳
-          </h3>
-          <p className="text-sm text-gray-600">
-            {stat.title}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

@@ -8,7 +8,7 @@ import Footer from "../Footer/page";
 import AuthGuard from "../(components)/AuthGuard";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux";
-import { usePathname } from "next/navigation"; // Add this import
+import { usePathname } from "next/navigation";
 
 interface DashboardWrapperProps {
   children: React.ReactNode;
@@ -21,9 +21,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const showPanel = useAppSelector((state) => state.global.isPOSPanelOpen);
-  const pathname = usePathname(); // Add this hook
+  const pathname = usePathname();
 
-  console.log("🔐 DashboardWrapper:", { isAuthenticated, pathname });
+  // console.log("🔐 DashboardWrapper:", { isAuthenticated, pathname });
 
   useEffect(() => {
     if (isDarkMode) {
@@ -31,13 +31,12 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     } else {
       document.documentElement.classList.add("light");
     }
-  });
+  }, [isDarkMode]);
 
-  // Fix: Use pathname instead of window.location for Next.js compatibility
   const publicRoutes = ["/login", "/register"];
-  const isPublicRoute = publicRoutes.includes(pathname) || !isAuthenticated;
+  const isPublicRoute = publicRoutes.includes(pathname);
 
-  if (isPublicRoute) {
+  if (isPublicRoute || !isAuthenticated) {
     console.log(
       "🔐 Public route or not authenticated, rendering without dashboard layout"
     );
@@ -47,25 +46,25 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className={`${
-        isDarkMode ? "bg-black text-white" : "bg-white text-black"
-      } flex w-full min-h-screen`}
+        isDarkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900"
+      } flex w-full min-h-screen transition-colors`}
     >
-      {showPanel ? "" : <Sidebar />}
+      {!showPanel && <Sidebar />}
       <main
-        className={`flex flex-col w-full h-full py-7 px-9 ${
-          isSidebarCollapsed ? "md:pl-20" : "md:pl-68"
+        className={`flex flex-col w-full h-full transition-all duration-300 ${
+          isSidebarCollapsed ? "md:pl-12" : "md:pl-60"
         }`}
       >
         <Navbar />
-        {children}
-        {/* <ProductsPage /> */}
-        {showPanel ? "" : <Footer />}
+        <div className="flex-1 p-6">{children}</div>
+        {!showPanel && <Footer />}
       </main>
     </div>
   );
 };
 
 const DashboardWrapper = ({ children }: { children: React.ReactNode }) => {
+  console.log("🔐 DashboardWrapper rendered");
   return (
     <AuthGuard>
       <DashboardLayout>{children}</DashboardLayout>

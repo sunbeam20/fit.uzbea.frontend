@@ -136,6 +136,8 @@ export interface SaleItem {
     wholesalePrice: number;
     purchasePrice: number;
     useIndividualSerials: boolean;
+    productType?: "New" | "PreOwned";
+    status: "Active" | "Unavailable" | "Discontinued";
   };
   salesItemSerials?: Array<{
     // Added for serial tracking
@@ -470,6 +472,8 @@ export interface User {
   userId?: string; // Added from schema
   name: string;
   email: string;
+  phone: string;
+  address?: string;
   password?: string; // Only for create/update
   status: "Active" | "Inactive"; // From schema enum
   role_id: number;
@@ -480,7 +484,10 @@ export interface User {
     name: string;
   };
 }
-
+export interface Roles {
+  id: number;
+  name: string;
+}
 // For backward compatibility - keep existing interfaces but add missing properties
 export interface SaleSummary extends Omit<Sale, "SalesItems"> {
   created_at: string;
@@ -605,7 +612,47 @@ export interface ServiceFrontend extends Omit<Service, "Customers" | "Users"> {
   updated_at: string;
 }
 
-// Other existing interfaces remain the same...
+export interface Permission {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface RolePermission {
+  id: number;
+  role_id: number;
+  permission_id: number;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  permissions?: Permission;
+}
+
+export interface RoleWithPermissions {
+  id: number;
+  name: string;
+  rolePermissions: RolePermission[];
+}
+
+export interface UpdateRolePermissionsRequest {
+  role_id: number;
+  permissions: {
+    permission_id: number;
+    can_view: boolean;
+    can_create: boolean;
+    can_edit: boolean;
+    can_delete: boolean;
+  }[];
+}
+
+export interface UserPermissionOverride {
+  pageAccess: string[];
+  dataPermissions: {
+    [key: string]: boolean;
+  };
+}
+
 export interface CustomerStats {
   totalCustomers: number;
   customersWithSales: number;
@@ -667,14 +714,32 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
+<<<<<<< Updated upstream
     baseUrl: "https://fit-uzbea-backend.vercel.app/api" || "/api",
     prepareHeaders: (headers) => {
+=======
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+    prepareHeaders: (headers, { endpoint }) => {
+>>>>>>> Stashed changes
       headers.set("Content-Type", "application/json");
+
+      // Add cache control headers for auth endpoints
+      if (endpoint === "getMe" || endpoint.includes("auth")) {
+        headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.set("Pragma", "no-cache");
+        headers.set("Expires", "0");
+      }
+
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
       if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
+        console.log("🔐 Authorization header set for", endpoint);
+      } else {
+        console.log("🔐 No token for", endpoint);
       }
+
       return headers;
     },
   }),
@@ -696,6 +761,8 @@ export const api = createApi({
     "Purchase",
     "User",
     "Supplier",
+    "Permission",
+    "Role",
   ],
   endpoints: (build) => ({
     getDashboardMetrics: build.query<DashboardMetrics, void>({
@@ -1261,6 +1328,187 @@ export const api = createApi({
         { type: "Purchase", invoiceNumber },
       ],
     }),
+
+    getAllUsers: build.query<
+      {
+        users: User[];
+        totalCount: number;
+        currentPage: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+      },
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        role?: string;
+        status?: string;
+      }
+    >({
+      query: ({
+        page = 1,
+        limit = 10,
+        search = "",
+        role = "all",
+        status = "all",
+      }) => ({
+        url: `/users`,
+        params: { page, limit, search, role, status },
+      }),
+      providesTags: ["User"],
+    }),
+
+    getUserStats: build.query<
+      {
+        stats: {
+          totalUsers: number;
+          activeUsers: number;
+          inactiveUsers: number;
+          adminUsers: number;
+          salesUsers: number;
+          managerUsers: number;
+          otherUsers: number;
+        };
+      },
+      void
+    >({
+      query: () => `/users/stats`,
+      providesTags: ["User"],
+    }),
+
+    getUserById: build.query<User, number>({
+      query: (id) => `/users/${id}`,
+      providesTags: (result, error, id) => [{ type: "User", id }],
+    }),
+
+    createUser: build.mutation<
+      User,
+      {
+        name: string;
+        email: string;
+        password: string;
+        role_id: number;
+        phone?: string;
+        address?: string;
+        status?: "Active" | "Inactive";
+      }
+    >({
+      query: (userData) => ({
+        url: `/users`,
+        method: "POST",
+        body: userData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    updateUser: build.mutation<
+      User,
+      {
+        id: number;
+        userData: {
+          name?: string;
+          email?: string;
+          role_id?: number;
+          phone?: string;
+          address?: string;
+          status?: "Active" | "Inactive";
+        };
+      }
+    >({
+      query: ({ id, userData }) => ({
+        url: `/users/${id}`,
+        method: "PUT",
+        body: userData,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "User", id }],
+    }),
+
+    deleteUser: build.mutation<{ message: string }, number>({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    deactivateUser: build.mutation<User, number>({
+      query: (id) => ({
+        url: `/users/${id}/deactivate`,
+        method: "PUT",
+      }),
+      invalidatesTags: (result, error, id) => [{ type: "User", id }],
+    }),
+
+    activateUser: build.mutation<User, number>({
+      query: (id) => ({
+        url: `/users/${id}/activate`,
+        method: "PUT",
+      }),
+      invalidatesTags: (result, error, id) => [{ type: "User", id }],
+    }),
+
+    getRoles: build.query<
+      Array<{
+        id: number;
+        name: string;
+      }>,
+      void
+    >({
+      query: () => `/users/roles`,
+      transformResponse: (response: { success: boolean; roles: any[] }) => {
+        // Extract the array from the response
+        return response.roles || [];
+      },
+      providesTags: ["User"],
+    }),
+
+    getPermissions: build.query<Permission[], void>({
+      query: () => "/permissions",
+      providesTags: ["Permission"],
+    }),
+
+    getRolePermissions: build.query<RoleWithPermissions, number>({
+      query: (roleId) => `/roles/${roleId}/permissions`,
+      providesTags: (result, error, roleId) => [{ type: "Role", id: roleId }],
+    }),
+
+    updateRolePermissions: build.mutation<
+      { success: boolean; message: string },
+      UpdateRolePermissionsRequest
+    >({
+      query: (data) => ({
+        url: "/roles/permissions",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Role"],
+    }),
+
+    getUserPermissions: build.query<
+      {
+        rolePermissions: RolePermission[];
+        userOverrides: UserPermissionOverride | null;
+      },
+      number
+    >({
+      query: (userId) => `/users/${userId}/permissions`,
+      providesTags: (result, error, userId) => [{ type: "User", id: userId }],
+    }),
+
+    updateUserPermissions: build.mutation<
+      { success: boolean; message: string },
+      { userId: number; overrides: UserPermissionOverride }
+    >({
+      query: ({ userId, overrides }) => ({
+        url: `/users/${userId}/permissions`,
+        method: "PUT",
+        body: { overrides },
+      }),
+      invalidatesTags: (result, error, { userId }) => [
+        { type: "User", id: userId },
+      ],
+    }),
   }),
 });
 
@@ -1341,4 +1589,18 @@ export const {
   useGetAvailableSerialsQuery,
   useGetSaleByInvoiceQuery,
   useGetPurchaseByInvoiceQuery,
+  useGetAllUsersQuery,
+  useGetUserStatsQuery,
+  useGetUserByIdQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useDeactivateUserMutation,
+  useActivateUserMutation,
+  useGetRolesQuery,
+  useGetPermissionsQuery,
+  useGetRolePermissionsQuery,
+  useUpdateRolePermissionsMutation,
+  useGetUserPermissionsQuery,
+  useUpdateUserPermissionsMutation,
 } = api;

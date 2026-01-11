@@ -18,6 +18,7 @@ import {
   CreditCard,
   Banknote,
 } from "lucide-react";
+import ProviderWrapper from "../(components)/ProviderWrapper";
 
 interface Expense {
   id: number;
@@ -37,6 +38,7 @@ const ExpensesPage = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   // Mock data - replace with actual API calls
   const [expenses, setExpenses] = useState<Expense[]>([
@@ -153,7 +155,8 @@ const ExpensesPage = () => {
   };
 
   return (
-    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}>
+    <ProviderWrapper>
+    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12`}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -164,72 +167,108 @@ const ExpensesPage = () => {
             </h1>
             <p className="mt-1">Manage your business expenses</p>
           </div>
-          <button
+          {/* <button
             onClick={() => router.push("/expenses/new")}
             className="mt-4 md:mt-0 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Expense
-          </button>
+          </button> */}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg p-4 shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm">Total Expenses</p>
-              <p className="text-2xl font-bold">{expenses.length}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <CircleDollarSign className="w-6 h-6 text-blue-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm">Paid</p>
-              <p className="text-2xl font-bold text-green-500">
-                {expenses.filter(e => e.status === "paid").length}
-              </p>
-            </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Calendar className="w-6 h-6 text-green-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm">Pending</p>
-              <p className="text-2xl font-bold text-orange-500">
-                {expenses.filter(e => e.status === "pending").length}
-              </p>
-            </div>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <User className="w-6 h-6 text-orange-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm">Total Amount</p>
-              <p className="text-2xl font-bold text-purple-500">
-                ৳{expenses.reduce((sum, expense) => sum + expense.amount, 0)}
-              </p>
-            </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Tag className="w-6 h-6 text-purple-500" />
-            </div>
-          </div>
-        </div>
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  {/* Total Expenses Card - Blue */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-blue-900/30 border-blue-800 text-white"
+      : "bg-blue-50 border-blue-200 text-blue-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Total Expenses</p>
+        <p className="text-2xl font-bold mt-2">{expenses.length}</p>
       </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-blue-800/50" : "bg-blue-100"
+      }`}>
+        <CircleDollarSign className={`w-6 h-6 ${
+          isDarkMode ? "text-blue-300" : "text-blue-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Paid Card - Green */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-green-900/30 border-green-800 text-white"
+      : "bg-green-50 border-green-200 text-green-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Paid</p>
+        <p className="text-2xl font-bold mt-2">
+          {expenses.filter(e => e.status === "paid").length}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-green-800/50" : "bg-green-100"
+      }`}>
+        <Calendar className={`w-6 h-6 ${
+          isDarkMode ? "text-green-300" : "text-green-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Pending Card - Orange */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-orange-900/30 border-orange-800 text-white"
+      : "bg-orange-50 border-orange-200 text-orange-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Pending</p>
+        <p className="text-2xl font-bold mt-2">
+          {expenses.filter(e => e.status === "pending").length}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-orange-800/50" : "bg-orange-100"
+      }`}>
+        <User className={`w-6 h-6 ${
+          isDarkMode ? "text-orange-300" : "text-orange-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Total Amount Card - Purple */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-purple-900/30 border-purple-800 text-white"
+      : "bg-purple-50 border-purple-200 text-purple-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Total Amount</p>
+        <p className="text-2xl font-bold mt-2">
+          ৳{expenses.reduce((sum, expense) => sum + expense.amount, 0)}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-purple-800/50" : "bg-purple-100"
+      }`}>
+        <Tag className={`w-6 h-6 ${
+          isDarkMode ? "text-purple-300" : "text-purple-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Filters and Search */}
       <div className="rounded-lg shadow-sm border mb-6">
@@ -460,6 +499,7 @@ const ExpensesPage = () => {
         )}
       </div>
     </div>
+    </ProviderWrapper>
   );
 };
 

@@ -36,7 +36,7 @@ const Footer = () => {
                 <MessageCircle className="size-6"/>
               </a>
             </div>
-            <span className="text-gray-400 text-sm">Designed by Sunbeam</span>
+            <span className="text-gray-400 text-sm">Developed by Sunbeam</span>
           </div>
 
           {/* Quick Links */}

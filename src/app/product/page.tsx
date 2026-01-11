@@ -40,6 +40,7 @@ import {
   Category,
 } from "@/state/api";
 import { useRouter } from "next/navigation";
+import ProviderWrapper from "../(components)/ProviderWrapper";
 
 const ProductsPage = () => {
   const router = useRouter();
@@ -561,10 +562,11 @@ const ProductsPage = () => {
   }
 
   return (
-    <div
-      className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
-        isDarkMode
-          ? "bg-gray-800/50 border-gray-700"
+    <ProviderWrapper>
+      <div
+        className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
+          isDarkMode
+            ? "bg-gray-800/50 border-gray-700"
           : "bg-white/50 border-gray-200"
       }`}
     >
@@ -590,75 +592,117 @@ const ProductsPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="rounded-lg p-4 shadow-sm bg-blue-100 border-gray-200">
+        {/* Total Products Card - Blue */}
+        <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+          isDarkMode
+            ? "bg-blue-900/30 border-blue-800 text-white"
+            : "bg-blue-50 border-blue-200 text-blue-900"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-black">Total Products</p>
-              <p className="text-2xl font-bold text-blue-500">
+              <p className="text-sm font-medium">Total Products</p>
+              <p className="text-2xl font-bold mt-2">
                 {products.length}
               </p>
             </div>
-            <div className="p-2 rounded-lg">
-              <Package className="w-6 h-6 text-blue-500" />
+            <div className={`p-3 rounded-lg ${
+              isDarkMode ? "bg-blue-800/50" : "bg-blue-100"
+            }`}>
+              <Package className={`w-6 h-6 ${
+                isDarkMode ? "text-blue-300" : "text-blue-600"
+              }`} />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm bg-orange-100 border-gray-200">
+        {/* Low Stock Card - Orange */}
+        <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+          isDarkMode
+            ? "bg-orange-900/30 border-orange-800 text-white"
+            : "bg-orange-50 border-orange-200 text-orange-900"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-black">Low Stock</p>
-              <p className="text-2xl font-bold text-orange-500">
+              <p className="text-sm font-medium">Low Stock</p>
+              <p className="text-2xl font-bold mt-2">
                 {products.filter((p) => p.quantity < 10).length}
               </p>
             </div>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Warehouse className="w-6 h-6 text-orange-500" />
+            <div className={`p-3 rounded-lg ${
+              isDarkMode ? "bg-orange-800/50" : "bg-orange-100"
+            }`}>
+              <Warehouse className={`w-6 h-6 ${
+                isDarkMode ? "text-orange-300" : "text-orange-600"
+              }`} />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm bg-green-100 border-gray-200">
+        {/* New Products Card - Green */}
+        <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+          isDarkMode
+            ? "bg-green-900/30 border-green-800 text-white"
+            : "bg-green-50 border-green-200 text-green-900"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-black">New Products</p>
-              <p className="text-2xl font-bold text-green-500">
+              <p className="text-sm font-medium">New Products</p>
+              <p className="text-2xl font-bold mt-2">
                 {products.filter((p) => p.productType === "New").length}
               </p>
             </div>
-            <div className="p-2 rounded-lg">
-              <Package className="w-6 h-6 text-green-500" />
+            <div className={`p-3 rounded-lg ${
+              isDarkMode ? "bg-green-800/50" : "bg-green-100"
+            }`}>
+              <Package className={`w-6 h-6 ${
+                isDarkMode ? "text-green-300" : "text-green-600"
+              }`} />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm bg-yellow-100 border-gray-200">
+        {/* Pre-Owned Card - Yellow/Amber */}
+        <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+          isDarkMode
+            ? "bg-yellow-900/30 border-yellow-800 text-white"
+            : "bg-yellow-50 border-yellow-200 text-yellow-900"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-black">Pre-Owned</p>
-              <p className="text-2xl font-bold text-yellow-500">
+              <p className="text-sm font-medium">Pre-Owned</p>
+              <p className="text-2xl font-bold mt-2">
                 {products.filter((p) => p.productType === "PreOwned").length}
               </p>
             </div>
-            <div className="p-2 rounded-lg">
-              <Package className="w-6 h-6 text-yellow-500" />
+            <div className={`p-3 rounded-lg ${
+              isDarkMode ? "bg-yellow-800/50" : "bg-yellow-100"
+            }`}>
+              <Package className={`w-6 h-6 ${
+                isDarkMode ? "text-yellow-300" : "text-yellow-600"
+              }`} />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg p-4 shadow-sm bg-purple-100 border-gray-200">
+        {/* Categories Card - Purple */}
+        <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+          isDarkMode
+            ? "bg-purple-900/30 border-purple-800 text-white"
+            : "bg-purple-50 border-purple-200 text-purple-900"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-black">Categories</p>
-              <p className="text-2xl font-bold text-purple-500">
-                {
-                  Array.from(new Set(products.map((p) => p.Categories?.name)))
-                    .length
-                }
+              <p className="text-sm font-medium">Categories</p>
+              <p className="text-2xl font-bold mt-2">
+                {Array.from(new Set(products.map((p) => p.Categories?.name))).length}
               </p>
             </div>
-            <div className="p-2 rounded-lg">
-              <Tag className="w-6 h-6 text-purple-500" />
+            <div className={`p-3 rounded-lg ${
+              isDarkMode ? "bg-purple-800/50" : "bg-purple-100"
+            }`}>
+              <Tag className={`w-6 h-6 ${
+                isDarkMode ? "text-purple-300" : "text-purple-600"
+              }`} />
             </div>
           </div>
         </div>
@@ -2108,6 +2152,7 @@ const ProductsPage = () => {
         </div>
       )}
     </div>
+    </ProviderWrapper>
   );
 };
 

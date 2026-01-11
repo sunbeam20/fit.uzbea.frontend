@@ -23,6 +23,7 @@ import {
   useUpdatePurchaseMutation,
   useDeletePurchaseMutation,
 } from "@/state/api";
+import ProviderWrapper from "@/app/(components)/ProviderWrapper";
 
 // Use the types from your API
 type Purchase = import('@/state/api').Purchase;
@@ -242,8 +243,8 @@ const SinglePurchasePage = () => {
   };
 
   return (
-    <>
-      <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}>
+    <ProviderWrapper>
+      <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12`}>
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
@@ -729,7 +730,7 @@ const SinglePurchasePage = () => {
           </div>
         </div>
       )}
-    </>
+    </ProviderWrapper>
   );
 };
 

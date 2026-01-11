@@ -11,6 +11,7 @@ import logo from "../../../public/floppy.jpg";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux";
+import ProviderWrapper from "../(components)/ProviderWrapper";
 
 const Dashboard = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);

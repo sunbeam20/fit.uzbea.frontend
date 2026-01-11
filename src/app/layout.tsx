@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import DashboardWrapper from "./dashboard/dashboardWrapper";
-import POSPanel from "./(components)/POSPanel.tsx/page";
 import StoreProvider from "./redux";
-import AuthInitializer from "@/app/(components)/AuthInitializer";
 import { DebugRouter } from "./(components)/DebugRouter";
+import AuthInitializer from "./(components)/AuthInitializer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,13 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* StoreProvider must be the outermost wrapper */}
         <StoreProvider>
           <AuthInitializer>
             <DebugRouter />
-            <DashboardWrapper> 
-              {children} 
-              <POSPanel />
-            </DashboardWrapper>
+            {/* AuthGuard will be called inside DashboardWrapper */}
+            {children}
           </AuthInitializer>
         </StoreProvider>
       </body>

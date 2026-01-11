@@ -1,61 +1,33 @@
-// app/(components)/AuthInitializer.tsx
-"use client";
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { useGetMeQuery } from "@/state/api";
-import { setCredentials, setLoading } from "@/state/authSlice";
+// components/AuthInitializer.tsx
+'use client';
 
-interface AuthInitializerProps {
-  children: React.ReactNode;
-}
+import { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/app/redux';
+import { fetchUserData } from '@/state/authSlice';
 
-const AuthInitializer = ({ children }: AuthInitializerProps) => {
-  const dispatch = useDispatch();
-  
-  // Only run getMe if we have a token
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const { data, error, isLoading } = useGetMeQuery(undefined, {
-    skip: !token, // Only skip if no token exists
-  });
-
-  console.log('🔐 AuthInitializer:', { 
-    hasToken: !!token, 
-    isLoading, 
-    data: !!data,
-    error: !!error 
-  });
+const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    if (data && token) {
-      console.log('🔐 Setting credentials with user data');
-      dispatch(setCredentials({ user: data, token }));
-    } else if (error) {
-      console.log('🔐 Auth error, clearing token');
-      localStorage.removeItem('token');
-      dispatch(setLoading(false));
+    // Check if user is authenticated on every page load
+    const token = localStorage.getItem('token');
+    
+    if (token && !isAuthenticated) {
+      // If we have a token but Redux says we're not authenticated, fetch user data
+      dispatch(fetchUserData());
     }
-  }, [data, error, token, dispatch]);
+  }, [dispatch, isAuthenticated]);
 
-  // Don't show loading if we're skipping the query (no token)
-  if (!token) {
-    console.log('🔐 No token, rendering children immediately');
-    dispatch(setLoading(false));
-    return <>{children}</>;
-  }
+  // Optional: Show loading state while checking auth
+  // if (isLoading && localStorage.getItem('token')) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  //     </div>
+  //   );
+  // }
 
-  if (isLoading) {
-    console.log('🔐 Checking authentication, showing loading');
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('🔐 AuthInitializer rendering children');
   return <>{children}</>;
 };
 

@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/app/redux";
 import {
   TrendingUp,
-  Plus,
   Edit,
   Trash2,
   Eye,
@@ -17,72 +16,33 @@ import {
   DollarSign,
   X,
   Package,
+  CreditCard,
+  Building,
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Tag,
+  Percent,
+  Hash,
+  Phone,
+  Mail,
+  MapPin,
+  ShoppingCart,
+  Receipt,
   RefreshCw,
+  AlertTriangle,
+  Undo2,
 } from "lucide-react";
 import {
   useGetSalesQuery,
-  useCreateSaleMutation,
   useUpdateSaleMutation,
   useDeleteSaleMutation,
   useGetProductsQuery,
   useGetCustomersQuery,
 } from "@/state/api";
-import { create, update } from "lodash";
-
-interface SaleItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  unitPrice: number;
-  Products: {
-    id: number;
-    name: string;
-    retailPrice: number;
-    specification?: string;
-  };
-}
-
-interface Sale {
-  id: number;
-  totalAmount: number;
-  totalPaid: number;
-  dueDate: string;
-  customer_id: number;
-  user_id: number;
-  Customers: {
-    id: number;
-    name: string;
-    email?: string;
-    phone: string;
-    address?: string;
-  };
-  Users: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  SalesItems: SaleItem[];
-  created_at: string;
-  updated_at: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  retailPrice: number;
-  wholesalePrice: number;
-  purchasePrice: number;
-  quantity: number;
-  specification?: string;
-}
-
-interface Customer {
-  id: number;
-  name: string;
-  email?: string;
-  phone: string;
-  address?: string;
-}
+import type { Sale, SaleItem, Product, Customer } from "@/state/api";
+import ProviderWrapper from "../(components)/ProviderWrapper";
 
 const SalesPage = () => {
   const router = useRouter();
@@ -96,7 +56,6 @@ const SalesPage = () => {
   const { data: products = [] } = useGetProductsQuery();
   const { data: customers = [] } = useGetCustomersQuery();
 
-  const [createSale] = useCreateSaleMutation();
   const [updateSale] = useUpdateSaleMutation();
   const [deleteSale] = useDeleteSaleMutation();
 
@@ -112,31 +71,35 @@ const SalesPage = () => {
   const [saleForm, setSaleForm] = useState({
     customer_id: 0,
     customerName: "",
+    customerEmail: "",
     customerPhone: "",
     customerAddress: "",
-    paymentMethod: "cash" as "cash" | "card" | "bank_transfer",
-    status: "pending" as "completed" | "pending" | "cancelled",
+    paymentMethod: "cash" as "cash" | "card" | "bank_transfer" | "mobile_payment",
+    status: "pending" as "pending" | "completed" | "cancelled" | "partially_paid",
+    notes: "",
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    dueDate: new Date().toISOString().split("T")[0] || "",
     items: [] as Array<{
       productId: number;
+      productCode: string;
+      productName: string;
       quantity: number;
       price: number;
       total: number;
+      discount: number;
     }>,
-    dueDate: new Date().toISOString().split("T")[0],
-    created_at: "",
-    updated_at: "",
   });
 
   // Dropdown states
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showPaymentDropdown, setShowPaymentDropdown] = useState(false);
-  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   // Refs for dropdown closing
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
-  const productDropdownRef = useRef<HTMLDivElement>(null);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
   const filterStatusDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -154,12 +117,6 @@ const SalesPage = () => {
         !paymentDropdownRef.current.contains(event.target as Node)
       ) {
         setShowPaymentDropdown(false);
-      }
-      if (
-        productDropdownRef.current &&
-        !productDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowProductDropdown(false);
       }
       if (
         customerDropdownRef.current &&
@@ -193,15 +150,22 @@ const SalesPage = () => {
         return "Completed";
       case "pending":
         return "Pending";
+      case "partially_paid":
+        return "Partially Paid";
+      case "cancelled":
+        return "Cancelled";
       default:
         return "All Status";
     }
   };
+  
   // Filter sales based on search and status
   const filteredSales = sales
     .filter(
       (sale) =>
         sale.Customers?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sale.saleNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sale.Customers?.phone?.includes(searchTerm) ||
         sale.id.toString().includes(searchTerm)
     )
     .filter((sale) => {
@@ -209,7 +173,11 @@ const SalesPage = () => {
       if (statusFilter === "completed")
         return Number(sale.totalPaid) >= Number(sale.totalAmount);
       if (statusFilter === "pending")
-        return Number(sale.totalPaid) < Number(sale.totalAmount);
+        return Number(sale.totalPaid) === 0;
+      if (statusFilter === "partially_paid")
+        return Number(sale.totalPaid) > 0 && Number(sale.totalPaid) < Number(sale.totalAmount);
+      if (statusFilter === "cancelled")
+        return sale.status === "Cancelled";
       return true;
     });
 
@@ -224,44 +192,37 @@ const SalesPage = () => {
     }
   };
 
-  const handleAddSale = () => {
-    setSaleForm({
-      customer_id: 0,
-      customerName: "",
-      customerPhone: "",
-      customerAddress: "",
-      paymentMethod: "cash",
-      status: "pending",
-      items: [],
-      dueDate: new Date().toISOString().split("T")[0],
-      created_at: "",
-      updated_at: "",
-    });
-    setEditingSale(null);
-    setShowSaleModal(true);
-  };
-
   const handleEditSale = (sale: Sale) => {
+    const totalPaid = Number(sale.totalPaid);
+    const totalAmount = Number(sale.totalAmount);
+    
+    let status: "pending" | "completed" | "cancelled" | "partially_paid" = "pending";
+    if (totalPaid >= totalAmount) status = "completed";
+    else if (totalPaid > 0) status = "partially_paid";
+    else if (sale.status === "Cancelled") status = "cancelled";
+    
     setSaleForm({
-      customer_id: sale.customer_id,
+      customer_id: sale.customer_id || 0,
       customerName: sale.Customers?.name || "",
+      customerEmail: sale.Customers?.email || "",
       customerPhone: sale.Customers?.phone || "",
       customerAddress: sale.Customers?.address || "",
-      paymentMethod: "cash", // You might want to add this field to your Sale model
-      created_at: sale.created_at,
-      updated_at: sale.updated_at,
-
-      status:
-        Number(sale.totalPaid) >= Number(sale.totalAmount)
-          ? "completed"
-          : "pending",
-      items: sale.SalesItems.map((item) => ({
+      paymentMethod: "cash", // Default, you might want to get this from sale data
+      status,
+      notes: "",
+      discount: sale.totaldiscount || 0,
+      tax: 0, // You might want to add tax to your Sale model
+      shipping: 0, // You might want to add shipping to your Sale model
+      dueDate: sale.dueDate ? sale.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
+      items: (sale.SalesItems || []).map((item) => ({
         productId: item.product_id,
+        productCode: item.Products?.productCode || "",
+        productName: item.Products?.name || "",
         quantity: item.quantity,
         price: Number(item.unitPrice),
         total: item.quantity * Number(item.unitPrice),
+        discount: item.discount || 0,
       })),
-      dueDate: sale.dueDate ? sale.dueDate.split("T")[0] : "",
     });
     setEditingSale(sale);
     setShowSaleModal(true);
@@ -269,23 +230,26 @@ const SalesPage = () => {
 
   const handleSaveSale = async () => {
     try {
-      const totalAmount = saleForm.items.reduce(
-        (sum, item) => sum + item.total,
-        0
-      );
-      const totalPaid = saleForm.status === "completed" ? totalAmount : 0;
+      const subtotal = saleForm.items.reduce((sum, item) => sum + item.total, 0);
+      const discountAmount = saleForm.discount;
+      const taxAmount = saleForm.tax;
+      const shippingAmount = saleForm.shipping;
+      const totalAmount = subtotal - discountAmount + taxAmount + shippingAmount;
+      
+      let totalPaid = 0;
+      if (saleForm.status === "completed") totalPaid = totalAmount;
+      else if (saleForm.status === "partially_paid") {
+        // For partially paid, you might want to add a field for amount paid
+        totalPaid = Math.min(totalAmount * 0.5, totalAmount); // Example: 50% paid
+      }
 
       const saleData = {
         customer_id: saleForm.customer_id,
-        user_id: 1, // You'll need to get this from your auth context
-        totalAmount,
         totalPaid,
+        totalAmount,
+        totaldiscount: discountAmount,
         dueDate: saleForm.dueDate,
-        items: saleForm.items.map((item) => ({
-          product_id: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.price,
-        })),
+        status: saleForm.status.charAt(0).toUpperCase() + saleForm.status.slice(1), // Capitalize first letter
       };
 
       if (editingSale) {
@@ -293,47 +257,14 @@ const SalesPage = () => {
           id: editingSale.id,
           sale: saleData,
         }).unwrap();
-      } else {
-        await createSale(saleData).unwrap();
       }
 
       setShowSaleModal(false);
       setEditingSale(null);
     } catch (error) {
       console.error("Failed to save sale:", error);
-      alert(
-        `Failed to ${editingSale ? "update" : "create"} sale. Please try again.`
-      );
+      alert("Failed to update sale. Please try again.");
     }
-  };
-
-  const addProductToSale = (productId: number) => {
-    const product = products.find((p) => p.id === productId);
-    if (product) {
-      const existingItemIndex = saleForm.items.findIndex(
-        (item) => item.productId === productId
-      );
-
-      if (existingItemIndex >= 0) {
-        // Update quantity if product already exists
-        const updatedItems = [...saleForm.items];
-        updatedItems[existingItemIndex].quantity += 1;
-        updatedItems[existingItemIndex].total =
-          updatedItems[existingItemIndex].quantity *
-          updatedItems[existingItemIndex].price;
-        setSaleForm({ ...saleForm, items: updatedItems });
-      } else {
-        // Add new product
-        const newItem = {
-          productId,
-          quantity: 1,
-          price: Number(product.retailPrice),
-          total: Number(product.retailPrice),
-        };
-        setSaleForm({ ...saleForm, items: [...saleForm.items, newItem] });
-      }
-    }
-    setShowProductDropdown(false);
   };
 
   const selectCustomer = (customer: Customer) => {
@@ -341,28 +272,11 @@ const SalesPage = () => {
       ...saleForm,
       customer_id: customer.id,
       customerName: customer.name,
+      customerEmail: customer.email || "",
       customerPhone: customer.phone,
       customerAddress: customer.address || "",
     });
     setShowCustomerDropdown(false);
-  };
-
-  const removeProductFromSale = (productId: number) => {
-    setSaleForm({
-      ...saleForm,
-      items: saleForm.items.filter((item) => item.productId !== productId),
-    });
-  };
-
-  const updateProductQuantity = (productId: number, quantity: number) => {
-    if (quantity < 1) return;
-
-    const updatedItems = saleForm.items.map((item) =>
-      item.productId === productId
-        ? { ...item, quantity, total: quantity * item.price }
-        : item
-    );
-    setSaleForm({ ...saleForm, items: updatedItems });
   };
 
   const getStatusDisplayText = () => {
@@ -373,8 +287,25 @@ const SalesPage = () => {
         return "Pending";
       case "cancelled":
         return "Cancelled";
+      case "partially_paid":
+        return "Partially Paid";
       default:
         return "Select Status";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "partially_paid":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -383,9 +314,11 @@ const SalesPage = () => {
       case "cash":
         return "Cash";
       case "card":
-        return "Card";
+        return "Credit Card";
       case "bank_transfer":
         return "Bank Transfer";
+      case "mobile_payment":
+        return "Mobile Payment";
       default:
         return "Select Payment Method";
     }
@@ -395,12 +328,76 @@ const SalesPage = () => {
     return saleForm.customerName || "Select Customer";
   };
 
+  const updateItemField = (productId: number, field: string, value: any) => {
+    setSaleForm({
+      ...saleForm,
+      items: saleForm.items.map(item => 
+        item.productId === productId 
+          ? { 
+              ...item, 
+              [field]: value,
+              total: field === 'quantity' || field === 'price' || field === 'discount'
+                ? (field === 'quantity' ? value : item.quantity) * 
+                  (field === 'price' ? value : item.price) -
+                  (field === 'discount' ? value : item.discount)
+                : item.total
+            } 
+          : item
+      ),
+    });
+  };
+
+  const removeItem = (productId: number) => {
+    setSaleForm({
+      ...saleForm,
+      items: saleForm.items.filter(item => item.productId !== productId),
+    });
+  };
+
+  const addNewItem = () => {
+    setSaleForm({
+      ...saleForm,
+      items: [
+        ...saleForm.items,
+        {
+          productId: 0,
+          productCode: "",
+          productName: "",
+          quantity: 1,
+          price: 0,
+          total: 0,
+          discount: 0,
+        }
+      ],
+    });
+  };
+
+  const selectProductForItem = (itemIndex: number, productId: number) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const updatedItems = [...saleForm.items];
+      updatedItems[itemIndex] = {
+        ...updatedItems[itemIndex],
+        productId: product.id,
+        productCode: product.productCode,
+        productName: product.name,
+        price: product.retailPrice,
+        total: updatedItems[itemIndex].quantity * product.retailPrice,
+      };
+      setSaleForm({ ...saleForm, items: updatedItems });
+    }
+  };
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentSales = filteredSales.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
 
-  const totalAmount = saleForm.items.reduce((sum, item) => sum + item.total, 0);
+  const subtotal = saleForm.items.reduce((sum, item) => sum + item.total, 0);
+  const discountAmount = saleForm.discount;
+  const taxAmount = saleForm.tax;
+  const shippingAmount = saleForm.shipping;
+  const totalAmount = subtotal - discountAmount + taxAmount + shippingAmount;
 
   if (isLoading) {
     return (
@@ -441,9 +438,12 @@ const SalesPage = () => {
   }
 
   return (
+    <ProviderWrapper>
     <div
       className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12 ${
-        isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"
+        isDarkMode
+          ? "bg-gray-800/50 border-gray-700"
+          : "bg-white/50 border-gray-200"
       }`}
     >
       {/* Header */}
@@ -456,84 +456,111 @@ const SalesPage = () => {
             </h1>
             <p className="mt-1">Manage your sales transactions</p>
           </div>
-          <button
-            onClick={handleAddSale}
-            className="mt-4 md:mt-0 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Sale
-          </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-lg p-4 shadow-sm bg-blue-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-500">Total Sales</p>
-              <p className="text-2xl font-bold text-blue-500">{sales.length}</p>
-            </div>
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-blue-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm bg-green-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-green-500">Completed</p>
-              <p className="text-2xl font-bold text-green-500">
-                {
-                  sales.filter(
-                    (s) => Number(s.totalPaid) >= Number(s.totalAmount)
-                  ).length
-                }
-              </p>
-            </div>
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Calendar className="w-6 h-6 text-green-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm bg-orange-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-orange-500">Pending</p>
-              <p className="text-2xl font-bold text-orange-500">
-                {
-                  sales.filter(
-                    (s) => Number(s.totalPaid) < Number(s.totalAmount)
-                  ).length
-                }
-              </p>
-            </div>
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <User className="w-6 h-6 text-orange-500" />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg p-4 shadow-sm bg-purple-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-purple-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-purple-500">
-                ৳
-                {sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0)}
-              </p>
-            </div>
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-500" />
-            </div>
-          </div>
-        </div>
+{/* Stats Cards - Updated with dark mode support */}
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  {/* Total Sales Card - Blue */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-blue-900/30 border-blue-800 text-white"
+      : "bg-blue-50 border-blue-200 text-blue-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Total Sales</p>
+        <p className="text-2xl font-bold mt-2">{sales.length}</p>
       </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-blue-800/50" : "bg-blue-100"
+      }`}>
+        <TrendingUp className={`w-6 h-6 ${
+          isDarkMode ? "text-blue-300" : "text-blue-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Completed Card - Green */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-green-900/30 border-green-800 text-white"
+      : "bg-green-50 border-green-200 text-green-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Completed</p>
+        <p className="text-2xl font-bold mt-2">
+          {sales.filter((s) => Number(s.totalPaid) >= Number(s.totalAmount)).length}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-green-800/50" : "bg-green-100"
+      }`}>
+        <CheckCircle className={`w-6 h-6 ${
+          isDarkMode ? "text-green-300" : "text-green-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Pending Card - Orange */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-orange-900/30 border-orange-800 text-white"
+      : "bg-orange-50 border-orange-200 text-orange-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Pending</p>
+        <p className="text-2xl font-bold mt-2">
+          {sales.filter((s) => Number(s.totalPaid) === 0).length}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-orange-800/50" : "bg-orange-100"
+      }`}>
+        <Clock className={`w-6 h-6 ${
+          isDarkMode ? "text-orange-300" : "text-orange-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+
+  {/* Total Revenue Card - Purple */}
+  <div className={`rounded-lg p-4 shadow-sm border transition-all duration-300 hover:shadow-md ${
+    isDarkMode
+      ? "bg-purple-900/30 border-purple-800 text-white"
+      : "bg-purple-50 border-purple-200 text-purple-900"
+  }`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">Total Revenue</p>
+        <p className="text-2xl font-bold mt-2">
+          ৳ {sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0).toFixed(2)}
+        </p>
+      </div>
+      <div className={`p-3 rounded-lg ${
+        isDarkMode ? "bg-purple-800/50" : "bg-purple-100"
+      }`}>
+        <DollarSign className={`w-6 h-6 ${
+          isDarkMode ? "text-purple-300" : "text-purple-600"
+        }`} />
+      </div>
+    </div>
+  </div>
+</div>
 
       {/* Filters and Search */}
-      <div className={`rounded-lg shadow-sm border mb-6 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+      <div
+        className={`rounded-lg shadow-sm border mb-6 ${
+          isDarkMode
+            ? "bg-gray-800/50 border-gray-700"
+            : "bg-white/50 border-gray-200"
+        }`}
+      >
         <div className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -541,10 +568,14 @@ const SalesPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search by customer name or sale ID..."
+                  placeholder="Search by customer name, phone, or sale ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                    isDarkMode
+                      ? "bg-gray-800/50 border-gray-700"
+                      : "bg-white/50 border-gray-200"
+                  }`}
                 />
               </div>
             </div>
@@ -554,13 +585,23 @@ const SalesPage = () => {
                 onClick={() =>
                   setShowFilterStatusDropdown(!showFilterStatusDropdown)
                 }
-                className={`flex items-center justify-between px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}
+                className={`flex items-center justify-between px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
               >
                 <span>{getFilterStatusDisplayText()}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               {showFilterStatusDropdown && (
-                <ul className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg ${isDarkMode ? "bg-gray-800/90 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+                <ul
+                  className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg ${
+                    isDarkMode
+                      ? "bg-gray-800/90 border-gray-700"
+                      : "bg-white/50 border-gray-200"
+                  }`}
+                >
                   <li>
                     <button
                       onClick={() => {
@@ -594,16 +635,50 @@ const SalesPage = () => {
                       Pending
                     </button>
                   </li>
+                  <li>
+                    <button
+                      onClick={() => {
+                        setStatusFilter("partially_paid");
+                        setShowFilterStatusDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                    >
+                      Partially Paid
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => {
+                        setStatusFilter("cancelled");
+                        setShowFilterStatusDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                    >
+                      Cancelled
+                    </button>
+                  </li>
                 </ul>
               )}
             </div>
 
             <div className="flex gap-2">
-              <button className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+              <button
+                className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <Filter className="w-4 h-4" />
                 Filter
               </button>
-              <button className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+              <button
+                className={`px-4 py-2 border rounded-lg cursor-not-allowed flex items-center gap-2 ${
+                  isDarkMode
+                    ? "bg-gray-800/50 border-gray-700"
+                    : "bg-white/50 border-gray-200"
+                }`}
+              >
                 <Download className="w-4 h-4" />
                 Export
               </button>
@@ -613,10 +688,20 @@ const SalesPage = () => {
       </div>
 
       {/* Sales Table */}
-      <div className={`rounded-lg shadow-sm border overflow-hidden ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+      <div
+        className={`rounded-lg shadow-sm border overflow-hidden ${
+          isDarkMode
+            ? "bg-gray-800/50 border-gray-700"
+            : "bg-white/50 border-gray-200"
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className={`border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
+            <thead
+              className={`border-b ${
+                isDarkMode ? "border-gray-700" : "border-gray-200"
+              }`}
+            >
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Sale ID
@@ -638,44 +723,65 @@ const SalesPage = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${isDarkMode ? "divide-gray-700" : "divide-gray-200"}`}>
+            <tbody
+              className={`divide-y ${
+                isDarkMode ? "divide-gray-700" : "divide-gray-200"
+              }`}
+            >
               {currentSales.map((sale) => {
-                const isCompleted =
-                  Number(sale.totalPaid) >= Number(sale.totalAmount);
-                const status = isCompleted ? "completed" : "pending";
+                const totalPaid = Number(sale.totalPaid);
+                const totalAmount = Number(sale.totalAmount);
+                let status: string;
+                if (totalPaid >= totalAmount) status = "completed";
+                else if (totalPaid > 0) status = "partially_paid";
+                else if (sale.status === "Cancelled") status = "cancelled";
+                else status = "pending";
 
                 return (
-                  <tr key={sale.id} className="hover:bg-gray-300 hover:text-black">
+                  <tr
+                    key={sale.id}
+                    className="hover:bg-gray-300 hover:text-black"
+                  >
                     <td className="px-3 py-3 whitespace-nowrap">
                       <div
                         className="text-sm font-medium text-blue-600 cursor-pointer hover:underline"
                         onClick={() => router.push(`/sale/${sale.id}`)}
                       >
-                        #{sale.id}
+                        #{sale.saleNo || `SALE-${sale.id.toString().padStart(5, '0')}`}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm">{sale.Customers?.name}</div>
+                      <div
+                        className="text-sm font-medium text-blue-600 cursor-pointer hover:underline"
+                        onClick={() => router.push(`/sale/${sale.id}`)}
+                      >
+                        {sale.Customers?.name}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm">
-                        {new Date(sale.createdAt).toLocaleDateString()}
+                        {/* {new Date(sale.createdAt).toDateString()}, */}
+                        {/* {new Date(sale.createdAt).toTimeString()}, */}
+                        {new Date(sale.createdAt).toLocaleDateString("en-gb", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                        {/* {new Date(sale.createdAt).toLocaleTimeString()}, */}
+                        {/* {new Date(sale.createdAt).toString()}, */}
+                        {/* {new Date(sale.createdAt).toTimeString()}, */}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="text-sm font-medium">
-                        ৳{Number(sale.totalAmount)}
+                        ৳{totalAmount.toFixed(2)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span
-                        className={`inline-flex items-center px-2.5 py-2 rounded-lg text-xs font-bold capitalize ${
-                          status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
+                        className={`inline-flex items-center px-2.5 py-2 rounded-lg text-xs font-bold capitalize ${getStatusColor(status)}`}
                       >
-                        {status}
+                        {status.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
@@ -683,18 +789,21 @@ const SalesPage = () => {
                         <button
                           onClick={() => router.push(`/sale/${sale.id}`)}
                           className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
+                          title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleEditSale(sale)}  
+                          onClick={() => handleEditSale(sale)}
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                          title="Edit Sale"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteSale(sale.id)}
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                          title="Delete Sale"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -715,17 +824,8 @@ const SalesPage = () => {
               <p className="text-gray-500 mb-4">
                 {searchTerm || statusFilter !== "all"
                   ? "Try adjusting your search or filters"
-                  : "Get started by creating your first sale"}
+                  : "No sales recorded yet"}
               </p>
-              {!searchTerm && statusFilter === "all" && (
-                <button
-                  onClick={handleAddSale}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Sale
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -779,15 +879,23 @@ const SalesPage = () => {
         )}
       </div>
 
-      {/* Add/Edit Sale Modal */}
-      {showSaleModal && (
+      {/* Edit Sale Modal */}
+      {showSaleModal && editingSale && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="rounded-lg border max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className={`rounded-lg border max-w-5xl w-full max-h-[90vh] overflow-y-auto ${
+            isDarkMode ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"
+          }`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">
-                  {editingSale ? "Edit Sale" : "New Sale"}
-                </h2>
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <Edit className="w-6 h-6" />
+                    Edit Sale #{editingSale.saleNo || `SALE-${editingSale.id.toString().padStart(5, '0')}`}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Created: {new Date(editingSale.createdAt).toLocaleString()}
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowSaleModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -796,345 +904,496 @@ const SalesPage = () => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Customer & Payment Info */}
                 <div className="space-y-4">
-                  <div className="relative" ref={customerDropdownRef}>
-                    <label className="block text-sm font-medium mb-1">
-                      Customer *
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowCustomerDropdown(!showCustomerDropdown)
-                      }
-                      className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                    >
-                      <span>{getCustomerDisplayText()}</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    {showCustomerDropdown && (
-                      <ul className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${isDarkMode ? "bg-gray-900" : "bg-white"}`}>
-                        {customers.map((customer) => (
-                          <li key={customer.id}>
-                            <button
-                              type="button"
-                              onClick={() => selectCustomer(customer)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black flex justify-between items-center cursor-pointer"
-                            >
-                              <span>{customer.name}</span>
-                              <span className="text-sm text-gray-500">
-                                {customer.phone}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Customer Phone
-                    </label>
-                    <input
-                      type="text"
-                      value={saleForm.customerPhone}
-                      disabled
-                      className={`w-full px-3 py-2 border rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Customer Address
-                    </label>
-                    <textarea
-                      value={saleForm.customerAddress}
-                      disabled
-                      rows={3}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={saleForm.dueDate}
-                      onChange={(e) =>
-                        setSaleForm({ ...saleForm, dueDate: e.target.value })
-                      }
-                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative" ref={paymentDropdownRef}>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-bold mb-3 flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Customer Information
+                    </h3>
+                    <div className="relative" ref={customerDropdownRef}>
                       <label className="block text-sm font-medium mb-1">
-                        Payment Method
+                        Customer *
                       </label>
                       <button
                         type="button"
                         onClick={() =>
-                          setShowPaymentDropdown(!showPaymentDropdown)
+                          setShowCustomerDropdown(!showCustomerDropdown)
                         }
-                        className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
+                        className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                          isDarkMode ? "border-gray-700" : "border-gray-200"
+                        }`}
                       >
-                        <span>{getPaymentDisplayText()}</span>
+                        <span>{getCustomerDisplayText()}</span>
                         <ChevronDown className="w-4 h-4" />
                       </button>
-                      {showPaymentDropdown && (
-                        <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSaleForm({
-                                  ...saleForm,
-                                  paymentMethod: "cash",
-                                });
-                                setShowPaymentDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
-                            >
-                              Cash
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSaleForm({
-                                  ...saleForm,
-                                  paymentMethod: "card",
-                                });
-                                setShowPaymentDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
-                            >
-                              Card
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSaleForm({
-                                  ...saleForm,
-                                  paymentMethod: "bank_transfer",
-                                });
-                                setShowPaymentDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
-                            >
-                              Bank Transfer
-                            </button>
-                          </li>
+                      {showCustomerDropdown && (
+                        <ul
+                          className={`absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto ${
+                            isDarkMode ? "bg-gray-900" : "bg-white"
+                          }`}
+                        >
+                          {customers.map((customer) => (
+                            <li key={customer.id}>
+                              <button
+                                type="button"
+                                onClick={() => selectCustomer(customer)}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black flex justify-between items-center cursor-pointer"
+                              >
+                                <span>{customer.name}</span>
+                                <span className="text-sm text-gray-500">
+                                  {customer.phone}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </div>
-
-                    <div className="relative" ref={statusDropdownRef}>
+                    
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          <Phone className="w-3 h-3 inline mr-1" />
+                          Phone
+                        </label>
+                        <input
+                          type="text"
+                          value={saleForm.customerPhone}
+                          disabled
+                          className={`w-full px-3 py-2 border rounded-lg bg-gray-50 ${
+                            isDarkMode ? "border-gray-700" : "border-gray-200"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          <Mail className="w-3 h-3 inline mr-1" />
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={saleForm.customerEmail}
+                          disabled
+                          className={`w-full px-3 py-2 border rounded-lg bg-gray-50 ${
+                            isDarkMode ? "border-gray-700" : "border-gray-200"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3">
                       <label className="block text-sm font-medium mb-1">
-                        Status
+                        <MapPin className="w-3 h-3 inline mr-1" />
+                        Address
                       </label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowStatusDropdown(!showStatusDropdown)
+                      <textarea
+                        value={saleForm.customerAddress}
+                        disabled
+                        rows={2}
+                        className={`w-full px-3 py-2 border rounded-lg bg-gray-50 ${
+                          isDarkMode ? "border-gray-700" : "border-gray-200"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-bold mb-3 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      Payment & Status
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative" ref={paymentDropdownRef}>
+                        <label className="block text-sm font-medium mb-1">
+                          Payment Method
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPaymentDropdown(!showPaymentDropdown)
+                          }
+                          className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                            isDarkMode ? "border-gray-700" : "border-gray-200"
+                          }`}
+                        >
+                          <span>{getPaymentDisplayText()}</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        {showPaymentDropdown && (
+                          <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    paymentMethod: "cash",
+                                  });
+                                  setShowPaymentDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Cash
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    paymentMethod: "card",
+                                  });
+                                  setShowPaymentDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Credit Card
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    paymentMethod: "bank_transfer",
+                                  });
+                                  setShowPaymentDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Bank Transfer
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    paymentMethod: "mobile_payment",
+                                  });
+                                  setShowPaymentDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Mobile Payment
+                              </button>
+                            </li>
+                          </ul>
+                        )}
+                      </div>
+
+                      <div className="relative" ref={statusDropdownRef}>
+                        <label className="block text-sm font-medium mb-1">
+                          Status
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowStatusDropdown(!showStatusDropdown)
+                          }
+                          className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                            isDarkMode ? "border-gray-700" : "border-gray-200"
+                          }`}
+                        >
+                          <span>{getStatusDisplayText()}</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                        {showStatusDropdown && (
+                          <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({ ...saleForm, status: "pending" });
+                                  setShowStatusDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Pending
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    status: "completed",
+                                  });
+                                  setShowStatusDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Completed
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    status: "partially_paid",
+                                  });
+                                  setShowStatusDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Partially Paid
+                              </button>
+                            </li>
+                            <li>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSaleForm({
+                                    ...saleForm,
+                                    status: "cancelled",
+                                  });
+                                  setShowStatusDropdown(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
+                              >
+                                Cancelled
+                              </button>
+                            </li>
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={saleForm.dueDate}
+                        onChange={(e) =>
+                          setSaleForm({ ...saleForm, dueDate: e.target.value })
                         }
-                        className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                      >
-                        <span>{getStatusDisplayText()}</span>
-                        <ChevronDown className="w-4 h-4" />
-                      </button>
-                      {showStatusDropdown && (
-                        <ul className="absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg">
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSaleForm({ ...saleForm, status: "pending" });
-                                setShowStatusDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
-                            >
-                              Pending
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSaleForm({
-                                  ...saleForm,
-                                  status: "completed",
-                                });
-                                setShowStatusDropdown(false);
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black cursor-pointer"
-                            >
-                              Completed
-                            </button>
-                          </li>
-                        </ul>
-                      )}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                          isDarkMode ? "border-gray-700" : "border-gray-200"
+                        }`}
+                      />
+                    </div>
+
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">
+                        <FileText className="w-3 h-3 inline mr-1" />
+                        Notes
+                      </label>
+                      <textarea
+                        value={saleForm.notes}
+                        onChange={(e) =>
+                          setSaleForm({ ...saleForm, notes: e.target.value })
+                        }
+                        rows={3}
+                        placeholder="Add any notes about this sale..."
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 ${
+                          isDarkMode ? "border-gray-700" : "border-gray-200"
+                        }`}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column - Products */}
-                <div className="space-y-4">
-                  <div className="relative" ref={productDropdownRef}>
-                    <label className="block text-sm font-medium mb-1">
-                      Add Products
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowProductDropdown(!showProductDropdown)
-                      }
-                      className={`flex items-center justify-between w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}
-                    >
-                      <span>Select Product</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                    {showProductDropdown && (
-                      <ul className={`absolute z-10 w-full mt-1 border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto ${isDarkMode ? "bg-gray-900" : "bg-white"}`}>
-                        {products.map((product) => (
-                          <li key={product.id}>
-                            <button
-                              type="button"
-                              onClick={() => addProductToSale(product.id)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-100 hover:text-black flex justify-between items-center cursor-pointer"
-                            >
-                              <div>
-                                <div className="font-medium">
-                                  {product.name}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  Stock: {product.quantity}
-                                </div>
-                              </div>
-                              <span className="text-sm text-gray-500">
-                                ৳{Number(product.retailPrice)}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Selected Products */}
-                  <div className={`border rounded-lg ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
-                    <div className={`p-3 border-b ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
-                      <h3 className="font-medium">Selected Products</h3>
+                {/* Middle Column - Products */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-bold flex items-center gap-2">
+                        <ShoppingCart className="w-4 h-4" />
+                        Products
+                      </h3>
+                      <button
+                        onClick={addNewItem}
+                        className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600"
+                      >
+                        Add Item
+                      </button>
                     </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {saleForm.items.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          No products added
-                        </div>
-                      ) : (
-                        saleForm.items.map((item) => {
-                          const product = products.find(
-                            (p) => p.id === item.productId
-                          );
-                          return (
-                            <div
-                              key={item.productId}
-                              className={`p-3 border-b flex items-center justify-between ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {product?.name}
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="border-b">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium">Product</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium">Quantity</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium">Price</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium">Discount</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium">Total</th>
+                            <th className="px-3 py-2 text-center text-xs font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {saleForm.items.map((item, index) => (
+                            <tr key={index} className="border-b">
+                              <td className="px-3 py-2">
+                                <div>
+                                  <div className="font-medium">{item.productName || "Select Product"}</div>
+                                  <div className="text-xs text-gray-500">{item.productCode}</div>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  ৳{item.price.toFixed(2)} each
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateItemField(item.productId, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="w-16 px-2 py-1 border rounded text-center"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={item.price}
+                                  onChange={(e) => updateItemField(item.productId, 'price', parseFloat(e.target.value) || 0)}
+                                  className="w-24 px-2 py-1 border rounded text-center"
+                                />
+                              </td>
+                              <td className="px-3 py-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={item.discount}
+                                  onChange={(e) => updateItemField(item.productId, 'discount', parseFloat(e.target.value) || 0)}
+                                  className="w-20 px-2 py-1 border rounded text-center"
+                                />
+                              </td>
+                              <td className="px-3 py-2 text-center font-medium">
+                                ৳{item.total.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-center">
                                 <button
-                                  onClick={() =>
-                                    updateProductQuantity(
-                                      item.productId,
-                                      item.quantity - 1
-                                    )
-                                  }
-                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100 hover:text-black cursor-pointer"
-                                >
-                                  -
-                                </button>
-                                <span className="w-8 text-center">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={() =>
-                                    updateProductQuantity(
-                                      item.productId,
-                                      item.quantity + 1
-                                    )
-                                  }
-                                  className="w-6 h-6 rounded border flex items-center justify-center hover:bg-gray-100 hover:text-black cursor-pointer"
-                                >
-                                  +
-                                </button>
-                                <span className="w-20 text-right font-medium">
-                                  ৳{item.total.toFixed(2)}
-                                </span>
-                                <button
-                                  onClick={() =>
-                                    removeProductFromSale(item.productId)
-                                  }
-                                  className="text-red-500 hover:text-red-700 p-1"
+                                  onClick={() => removeItem(item.productId)}
+                                  className="text-red-500 hover:text-red-700"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
+                              </td>
+                            </tr>
+                          ))}
+                          {saleForm.items.length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
+                                No products added
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
                     </div>
-                    {saleForm.items.length > 0 && (
-                      <div className={`p-3 border-t ${isDarkMode ? "border-gray-700" : "border-gray-300"}`}>
-                        <div className="flex justify-between items-center font-bold">
-                          <span>Total Amount:</span>
+                  </div>
+
+                  {/* Summary Section */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-bold mb-3 flex items-center gap-2">
+                      <Receipt className="w-4 h-4" />
+                      Summary
+                    </h3>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>৳{subtotal.toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <Tag className="w-3 h-3" />
+                          <span>Discount:</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={saleForm.discount}
+                            onChange={(e) => setSaleForm({...saleForm, discount: parseFloat(e.target.value) || 0})}
+                            className="w-20 px-2 py-1 border rounded text-sm"
+                          />
+                        </div>
+                        <span>-৳{discountAmount}</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <Percent className="w-3 h-3" />
+                          <span>Tax:</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={saleForm.tax}
+                            onChange={(e) => setSaleForm({...saleForm, tax: parseFloat(e.target.value) || 0})}
+                            className="w-20 px-2 py-1 border rounded text-sm"
+                          />
+                        </div>
+                        <span>+৳{taxAmount.toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-3 h-3" />
+                          <span>Shipping:</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={saleForm.shipping}
+                            onChange={(e) => setSaleForm({...saleForm, shipping: parseFloat(e.target.value) || 0})}
+                            className="w-20 px-2 py-1 border rounded text-sm"
+                          />
+                        </div>
+                        <span>+৳{shippingAmount.toFixed(2)}</span>
+                      </div>
+                      
+                      <div className="border-t pt-2 font-bold text-lg">
+                        <div className="flex justify-between">
+                          <span>Total:</span>
                           <span>৳{totalAmount.toFixed(2)}</span>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowSaleModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveSale}
-                  disabled={
-                    !saleForm.customer_id || saleForm.items.length === 0
-                  }
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {editingSale ? "Update" : "Create"} Sale
-                </button>
+              <div className="flex justify-between items-center mt-6 pt-6 border-t">
+                <div className="text-sm text-gray-500">
+                  Last updated: {editingSale.updatedAt ? new Date(editingSale.updatedAt).toLocaleString() : 'Never'}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowSaleModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveSale}
+                    disabled={!saleForm.customer_id || saleForm.items.length === 0}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Update Sale
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
     </div>
+    </ProviderWrapper>
   );
 };
 

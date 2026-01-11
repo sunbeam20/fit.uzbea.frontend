@@ -24,7 +24,7 @@ import {
   setIsSidebarCollapsed,
   setIsPOSPanelOpen,
 } from "@/state";
-import { logout } from "@/state/authSlice"; // Import your logout action
+import { logout } from "@/state/authSlice";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -37,7 +37,7 @@ const Navbar = () => {
   const isPOSPanelOpen = useAppSelector((state) => state.global.isPOSPanelOpen);
 
   // Get auth state from Redux
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
 
   // Profile modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -76,45 +76,46 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      // Optional: Call your logout API endpoint if you have one
-      // await fetch('/api/auth/logout', { method: 'POST' });
-
+      // Call logout API endpoint
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('/api/auth/logout', { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
       // Dispatch logout action to clear Redux state
       dispatch(logout());
-
-      // Clear any additional storage
-      localStorage.removeItem("user");
-      sessionStorage.clear();
-
-      // Clear cookies if you're using them
-      document.cookie =
-        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
+      
+      // Clear all storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Clear cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+      }
+      
       // Redirect to login page
-      router.push("/login");
-      router.refresh(); // Refresh to ensure auth state is cleared
-
-      console.log("Logged out successfully");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Even if there's an error, clear client-side state
-      dispatch(logout());
-      router.push("/login");
-    } finally {
+      router.push('/login');
+      router.refresh();
+      
       setIsProfileModalOpen(false);
     }
   };
 
   const handleProfileOption = (option: string) => {
-    console.log(`Selected: ${option}`);
-    // Add navigation or actions for other profile options
     switch (option) {
-      case "Profile":
-        router.push("/profile");
-        break;
-      case "Billing":
-        router.push("/billing");
-        break;
       case "Settings":
         router.push("/settings");
         break;
@@ -130,16 +131,36 @@ const Navbar = () => {
   // Get user initials for avatar
   const getUserInitials = () => {
     if (user?.name) {
-      const firstName = user.name.split(" ")[0].toUpperCase();
+      const nameParts = user.name.split(' ');
+      const firstName = nameParts[0].toUpperCase();
       return firstName[0];
     }
     return "U";
   };
 
+  // Get user role - role is a string from backend
+  const getUserRole = () => {
+    return user?.Roles?.name;
+  };
+
+  // Show loading skeleton only when loading and no user
+  if (isLoading && !user) {
+    return (
+      <nav className={`fixed top-0 left-0 right-0 flex items-center backdrop-blur-3xl justify-between w-full h-12 px-2 shadow-sm z-51 border-b ${isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"}`}>
+        <div className="flex items-center gap-4">
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 w-32 rounded"></div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 w-24 rounded"></div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 flex items-center justify-between w-full h-12 px-2 shadow-sm z-51 border-b ${
-        isDarkMode ? "bg-black border-gray-700" : "bg-white border-gray-200"
+      className={`fixed top-0 left-0 right-0 flex items-center backdrop-blur-3xl justify-between w-full h-12 px-2 shadow-sm z-51 border-b ${
+        isDarkMode ? "bg-gray-800/50 border-gray-700" : "bg-white/50 border-gray-200"
       }`}
     >
       {/* LEFT SECTION - Logo & Navigation */}
@@ -170,42 +191,12 @@ const Navbar = () => {
             FLOPPY IT
           </h1>
         </div>
-
-        {/* Search - Products (Desktop) */}
-        {/* <div className="hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="search"
-              placeholder="Search Products..."
-              className={`w-64 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                isDarkMode
-                  ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
-              }`}
-            />
-          </div>
-        </div> */}
       </div>
 
       {/* RIGHT SECTION - Actions & User */}
       <div className="flex items-center gap-3">
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Customer Search */}
-          {/* <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="search"
-              placeholder="Search Customers..."
-              className={`w-48 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                isDarkMode
-                  ? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
-                  : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500"
-              }`}
-            />
-          </div> */}
-
           {/* Theme Toggle */}
           <button
             onClick={toggleDarkMode}
@@ -240,134 +231,112 @@ const Navbar = () => {
             </span>
           </div>
 
-          {/* User Profile with Modal */}
-          <div className="relative" ref={profileRef}>
-            <button
-              onClick={handleProfileClick}
-              className={`flex items-center gap-2 pl-2 rounded-lg transition-colors ${
-                isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-              } ${
-                isProfileModalOpen
-                  ? isDarkMode
-                    ? "bg-gray-700"
-                    : "bg-gray-100"
-                  : ""
-              }`}
-            >
-              <div
-                className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 ${
-                  isDarkMode ? "border-gray-700" : "border-white"
+          {/* User Profile with Modal - Only show if user exists */}
+          {user && (
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={handleProfileClick}
+                className={`flex items-center gap-2 pl-2 rounded-lg transition-colors ${
+                  isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                } ${
+                  isProfileModalOpen
+                    ? isDarkMode
+                      ? "bg-gray-700"
+                      : "bg-gray-100"
+                    : ""
                 }`}
               >
-                {getUserInitials()}
-              </div>
-              <span
-                className={`font-medium text-sm ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
-                {user?.name.split(" ")[0] || "User"}
-              </span>
-            </button>
+                <div
+                  className={`w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 ${
+                    isDarkMode ? "border-gray-700" : "border-white"
+                  }`}
+                >
+                  {getUserInitials()}
+                </div>
+                <span
+                  className={`font-medium text-sm ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  {user?.name || "User"}
+                </span>
+              </button>
 
-            {/* Profile Modal */}
-            {isProfileModalOpen && (
-              <div
-                className={`absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg z-100 border ${
-                  isDarkMode
-                    ? "bg-gray-950/90 border-gray-700"
-                    : "bg-white/90 border-gray-200"
-                }`}
-              >
-                <div className="rounded-lg p-2 space-y-1">
-                  {/* User Info */}
-                  <div className="px-3 py-2 border-b border-gray-700 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {getUserInitials()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">
-                          {user?.name || "User"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {user?.email || "user@example.com"}
-                        </p>
-                        <p className="text-xs text-blue-500 dark:text-blue-400 capitalize">
-                          {user?.role || "User"}
-                        </p>
+              {/* Profile Modal */}
+              {isProfileModalOpen && (
+                <div
+                  className={`absolute top-full right-0 mt-2 w-64 rounded-lg shadow-lg z-100 border ${
+                    isDarkMode
+                      ? "bg-gray-950/90 border-gray-700"
+                      : "bg-white/90 border-gray-200"
+                  }`}
+                >
+                  <div className="rounded-lg p-2 space-y-1">
+                    {/* User Info */}
+                    <div className="px-3 py-2 border-b border-gray-700 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          {getUserInitials()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">
+                            {user?.name || "User"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {user?.email || "user@example.com"}
+                          </p>
+                          <p className="text-xs text-blue-500 dark:text-blue-400 capitalize">
+                            {getUserRole()}
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Profile Options */}
+                    <button
+                      onClick={() => handleProfileOption("Settings")}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        isDarkMode
+                          ? "hover:bg-gray-700 text-gray-200"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleProfileOption("Help")}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        isDarkMode
+                          ? "hover:bg-gray-700 text-gray-200"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                      <span>Help & Support</span>
+                    </button>
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+                    {/* Logout */}
+                    <button
+                      onClick={handleLogout}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                        isDarkMode
+                          ? "hover:bg-red-600 text-red-200"
+                          : "hover:bg-red-50 text-red-600"
+                      }`}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Logout</span>
+                    </button>
                   </div>
-
-                  {/* Profile Options */}
-                  <button
-                    onClick={() => handleProfileOption("Profile")}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isDarkMode
-                        ? "hover:bg-gray-700 text-gray-200"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    <UserIcon className="w-4 h-4" />
-                    <span>My Profile</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleProfileOption("Billing")}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isDarkMode
-                        ? "hover:bg-gray-700 text-gray-200"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Billing & Plans</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleProfileOption("Settings")}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isDarkMode
-                        ? "hover:bg-gray-700 text-gray-200"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleProfileOption("Help")}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isDarkMode
-                        ? "hover:bg-gray-700 text-gray-200"
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Help & Support</span>
-                  </button>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-
-                  {/* Logout */}
-                  <button
-                    onClick={handleLogout}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                      isDarkMode
-                        ? "hover:bg-red-600 text-red-200"
-                        : "hover:bg-red-50 text-red-600"
-                    }`}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
-                  </button>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Mobile Actions */}

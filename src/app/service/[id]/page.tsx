@@ -26,6 +26,7 @@ import {
   useDeleteServiceMutation,
   useUpdateServiceMutation,
 } from "@/state/api";
+import ProviderWrapper from "@/app/(components)/ProviderWrapper";
 
 interface Service {
   id: number;
@@ -223,7 +224,8 @@ const SingleServicePage = () => {
   }
 
   return (
-    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}>
+    <ProviderWrapper>
+    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12`}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
@@ -706,6 +708,7 @@ const SingleServicePage = () => {
         </div>
       )}
     </div>
+    </ProviderWrapper>
   );
 };
 

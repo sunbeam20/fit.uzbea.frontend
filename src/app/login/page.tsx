@@ -55,10 +55,40 @@ const LoginPage = () => {
     }
 
     try {
+      console.log('🔐 Attempting login...');
       const result = await login(formData).unwrap();
-      dispatch(setCredentials(result));
+      
+      console.log('🔐 Login successful:', { 
+        hasToken: !!result.token, 
+        user: result.user 
+      });
+      
+      // Save token
+      localStorage.setItem('token', result.token);
+      console.log('🔐 Token saved to localStorage');
+      
+      // Dispatch credentials to Redux
+      dispatch(setCredentials({
+        user: {
+          ...result.user,
+          role: String(result.user.role_id || ""),
+          created_at: result.user.createdAt || new Date().toISOString(),
+          updated_at: result.user.updatedAt || new Date().toISOString(),
+        },
+        token: result.token,
+      }));
+      
+      console.log('🔐 Credentials dispatched to Redux');
+      
+      // Force a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Redirect to home
+      console.log('🔐 Redirecting to /');
       router.push("/");
+      
     } catch (err: any) {
+      console.error('🔐 Login error:', err);
       setError(err?.data?.message || "Login failed. Please try again.");
     }
   };

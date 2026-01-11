@@ -24,6 +24,8 @@ import {
   useDeleteExchangeMutation,
   useUpdateExchangeMutation,
 } from "@/state/api";
+import { Provider } from "react-redux";
+import ProviderWrapper from "@/app/(components)/ProviderWrapper";
 
 interface ExchangeItem {
   id: number;
@@ -188,7 +190,8 @@ const SingleExchangePage = () => {
   }
 
   return (
-    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-20`}>
+    <ProviderWrapper>
+    <div className={`${getContentMargin()} p-6 min-h-full border rounded-xl shadow-2xl transition-all duration-300 mt-12`}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-4">
@@ -684,6 +687,7 @@ const SingleExchangePage = () => {
         </div>
       )}
     </div>
+    </ProviderWrapper>
   );
 };
 
