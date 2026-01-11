@@ -714,13 +714,8 @@ export interface AuthResponse {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-<<<<<<< Updated upstream
     baseUrl: "https://fit-uzbea-backend.vercel.app/api" || "/api",
-    prepareHeaders: (headers) => {
-=======
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
     prepareHeaders: (headers, { endpoint }) => {
->>>>>>> Stashed changes
       headers.set("Content-Type", "application/json");
 
       // Add cache control headers for auth endpoints
