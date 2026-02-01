@@ -215,7 +215,7 @@ const Navbar = () => {
           </button>
 
           {/* Notifications */}
-          <div className={`relative ${isPOSPanelOpen ? "hidden" : ""}`}>
+          {/* <div className={`relative ${isPOSPanelOpen ? "hidden" : ""}`}>
             <button
               className={`p-2 rounded-lg transition-colors ${
                 isDarkMode
@@ -229,7 +229,7 @@ const Navbar = () => {
             <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full border-2 border-white dark:border-gray-900">
               3
             </span>
-          </div>
+          </div> */}
 
           {/* User Profile with Modal - Only show if user exists */}
           {user && (
@@ -374,10 +374,10 @@ const Navbar = () => {
         {/* POS Button */}
         <button
           onClick={togglePOSPanel}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm min-w-[80px] justify-center ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm min-w-[80px] justify-center cursor-pointer ${
             isPOSPanelOpen
-              ? "bg-blue-700 text-white shadow-md"
-              : "bg-blue-600 text-white hover:bg-blue-700"
+              ? "bg-blue-700 text-white hover:bg-blue-600 shadow-md"
+              : "bg-blue-600 text-white hover:bg-blue-500"
           }`}
         >
           <span>POS</span>

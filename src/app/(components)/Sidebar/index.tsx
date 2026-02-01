@@ -6,7 +6,7 @@ import {
   CircleDollarSign,
   DollarSign,
   House,
-  Layout,
+  LayoutIcon,
   ListCheck,
   ListChecks,
   LucideIcon,
@@ -87,7 +87,7 @@ const Sidebar = () => {
       <div className="flex-grow">
         <SidebarLink
           href="/"
-          icon={Layout}
+          icon={LayoutIcon}
           label="Dashboard"
           isCollapsed={isSidebarCollapsed}
         />

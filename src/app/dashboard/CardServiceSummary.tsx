@@ -38,7 +38,7 @@ const CardServiceSummary = () => {
 
   if (isLoading) {
     return (
-      <div className="shadow-2xl rounded-2xl border">
+      <div className={`shadow-2xl rounded-2xl border ${isDarkMode ? "border-gray-700" : "border-gray-200"}`} >
         <div className="m-5">Loading...</div>
       </div>
     );

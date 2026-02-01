@@ -173,7 +173,7 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          {/* <div className="mt-6 text-center">
             <p className="text-gray-600">
               Don't have an account?{" "}
               <button
@@ -183,7 +183,7 @@ const LoginPage = () => {
                 Sign up
               </button>
             </p>
-          </div>
+          </div> */}
         </div>
 
         <div className="mt-8 bg-blue-50 rounded-lg p-4">

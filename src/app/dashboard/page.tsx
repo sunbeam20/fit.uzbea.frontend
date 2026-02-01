@@ -7,7 +7,7 @@ import CardExchangeSummary from "./CardExchangeSummary";
 import CardServiceSummary from "./CardServiceSummary";
 import CardStats from "./CardStats";
 import { useAppSelector } from "../redux";
-import logo from "../../../public/floppy.jpg";
+import pos from "../../../public/pos.jpg";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux";
@@ -22,14 +22,12 @@ const Dashboard = () => {
     <>
       {showPanel && isAuthenticated ? (
         <div
-          className={`fixed inset-0 flex items-center justify-center ${
-            isDarkMode ? "bg-black" : "invert"
-          }`}
+          className={`fixed inset-0 flex items-center justify-center`}
         >
           {/* Container with circular border */}
-          <div className="relative size-dvw rounded-full overflow-hidden border-8 border-white shadow-2xl">
+          <div className="relative size-dvw mt-12 overflow-hidden">
             <Image
-              src={logo}
+              src={pos}
               alt="Floppy IT"
               className="object-cover"
               fill
@@ -38,21 +36,21 @@ const Dashboard = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-4 mt-12 gap-8">
+        <div className="grid grid-cols-4 mt-12 gap-4">
           {/* Stats Cards */}
           <div className="col-span-4">
             <CardStats />
           </div>
           {/* Charts Row */}
-          <div className="col-span-4 row-span-1">
-            <CardPopularProducts />
-          </div>
           <div className="col-span-4 md:col-span-2 row-span-1">
             <CardSalesSummary />
           </div>
           <div className="col-span-4 md:col-span-2 row-span-1">
             <CardPurchaseSummary />
           </div>
+          {/* <div className="col-span-4 row-span-1">
+            <CardPopularProducts />
+          </div> */}
           <div className="col-span-4 row-span-1">
             <CardServiceSummary />
           </div>

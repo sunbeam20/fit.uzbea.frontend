@@ -2,17 +2,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface Product {
   id: number;
-  productCode: string; // Added from schema
+  productCode: string;
   name: string;
   specification?: string | null;
   description?: string | null;
   quantity: number;
-  purchasePrice: number;
-  wholesalePrice: number;
-  retailPrice: number;
   useIndividualSerials: boolean;
-  productType: "New" | "PreOwned";
-  status: "Active" | "Unavailable" | "Discontinued"; // Updated from schema
+  status: "Active" | "Unavailable" | "Discontinued";
   category_id: number;
   supplier_id?: number;
   created_by?: number;
@@ -25,7 +21,7 @@ export interface Product {
   };
   supplier?: {
     id: number;
-    suppId?: string; // Added from schema
+    suppId?: string;
     name: string;
     email?: string;
     phone: string;
@@ -34,13 +30,13 @@ export interface Product {
   productSerials?: ProductSerial[];
   creator?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
   updater?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
@@ -57,10 +53,28 @@ export interface ProductSerial {
     | "Unavailable"
     | "InService"
     | "Exchanged";
-  warranty: "Yes" | "No"; // Added from schema
+  warranty: "Yes" | "No";
+  purchasePrice: number;
+  wholesalePrice: number;
+  retailPrice: number;
+  productType: "New" | "PreOwned";
+  supplier_id?: number;
   createdAt: string;
   updatedAt: string;
-  // Note: sale_id doesn't exist in schema - sales are tracked through SalesItemSerials junction table
+  supplier?: {
+    id: number;
+    suppId?: string;
+    name: string;
+    email?: string;
+    phone: string;
+    address?: string;
+  };
+  saleInfo?: {
+    saleNo: string;
+    customerName: string;
+    saleDate: string;
+    soldPrice: number;
+  } | null;
 }
 
 export interface CreateProductRequest {
@@ -68,23 +82,22 @@ export interface CreateProductRequest {
   specification?: string;
   description?: string;
   quantity: number;
-  purchasePrice: number;
-  wholesalePrice: number;
-  retailPrice: number;
-  warranty?: "Yes" | "No"; // Optional product-level warranty
-  productType: "New" | "PreOwned";
-  category_id: number;
   useIndividualSerials: boolean;
-  bulkSerial?: string; // For non-serialized products
-  individualSerials?: string[]; // Array of serials for serialized products
+  category_id: number;
+  supplier_id?: number;
+  userId?: number;
   serials?: Array<{
-    // Added for serialized products with warranty
     serial: string;
     warranty?: "Yes" | "No";
+    purchasePrice: number;
+    wholesalePrice: number;
+    retailPrice: number;
+    productType: "New" | "PreOwned";
+    supplier_id?: number;
   }>;
-  supplier_id?: number;
-  userId?: number; // For created_by field
 }
+
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {}
 
 export interface Category {
   id: number;
@@ -93,19 +106,19 @@ export interface Category {
 
 export interface Sale {
   id: number;
-  saleNo: string; // Added from schema
+  saleNo: string;
   totalAmount: number;
   totalPaid: number;
-  totaldiscount?: number; // Added from schema
-  dueDate?: string;
+  totaldiscount?: number;
+  dueDate?: string | null;
   customer_id?: number;
   user_id: number;
-  status?: "Pending" | "Completed" | "Cancelled"; // Added from schema
+  status: string;
   createdAt: string;
   updatedAt: string;
   Customers?: {
     id: number;
-    custId?: string; // Added from schema
+    custId?: string;
     name: string;
     email?: string;
     phone: string;
@@ -113,11 +126,12 @@ export interface Sale {
   };
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
   SalesItems: SaleItem[];
+  Payments?: Payment[];
 }
 
 export interface SaleItem {
@@ -129,21 +143,18 @@ export interface SaleItem {
   product_id: number;
   Products?: {
     id: number;
-    productCode?: string; // Added from schema
+    productCode?: string;
     name: string;
     specification?: string;
-    retailPrice: number;
-    wholesalePrice: number;
-    purchasePrice: number;
     useIndividualSerials: boolean;
-    productType?: "New" | "PreOwned";
     status: "Active" | "Unavailable" | "Discontinued";
   };
   salesItemSerials?: Array<{
-    // Added for serial tracking
     id: number;
     salesItem_id: number;
     serial_id: number;
+    soldPrice: number;
+    soldAt: string;
     ProductSerials?: ProductSerial;
   }>;
 }
@@ -153,14 +164,31 @@ export interface CreateSaleRequest {
   user_id: number;
   totalAmount: number;
   totalPaid?: number;
-  totaldiscount?: number; // Added from schema
+  totaldiscount?: number;
   dueDate?: string;
   items: Array<{
     product_id: number;
     quantity: number;
     unitPrice: number;
-    serials?: string[]; // For serialized products
+    discount?: number;
+    serials?: string[];
   }>;
+}
+
+export interface CreateSaleFromPOSRequest {
+  customer_id?: number;
+  items: Array<{
+    product_id: number;
+    quantity: number;
+    unitPrice: number;
+    discount?: {
+      type: "percentage" | "fixed";
+      value: number;
+    };
+  }>;
+  totalAmount: number;
+  totalPaid?: number;
+  discount?: number;
 }
 
 export interface UpdateSaleRequest {
@@ -168,23 +196,23 @@ export interface UpdateSaleRequest {
   dueDate?: string;
   customer_id?: number;
   user_id?: number;
-  totaldiscount?: number; // Added from schema
+  totaldiscount?: number;
 }
 
 export interface SalesStats {
   totalSales: number;
   totalRevenue: number;
   totalPaid: number;
-  totalDiscount?: number; // Added from schema
+  totalDiscount?: number;
   pendingSales: number;
   completedSales: number;
   totalDue: number;
-  netRevenue?: number; // Added: totalRevenue - totalDiscount
+  netRevenue?: number;
 }
 
 export interface SalesReturn {
   id: number;
-  returnNo: string; // Added from schema (SR-00001 format)
+  returnNo: string;
   total_payback: number;
   note: string;
   sales_id: number;
@@ -195,13 +223,13 @@ export interface SalesReturn {
   Sales?: Sale;
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
   Customers?: {
     id: number;
-    custId?: string; // Added from schema
+    custId?: string;
     name: string;
     email?: string;
     phone: string;
@@ -216,20 +244,21 @@ export interface SalesReturnItem {
   unitPrice: number;
   product_id: number;
   salesReturn_id: number;
-  productSerialsId?: number; // Added from schema
+  productSerialsId?: number;
   Products?: Product;
   salesReturnItemSerials?: Array<{
-    // Added from schema
     id: number;
     salesReturnItem_id: number;
     serial_id: number;
+    returnedPrice: number; // Added: from SalesReturnItemSerials
+    returnedAt: string;
     ProductSerials?: ProductSerial;
   }>;
 }
 
 export interface Purchase {
   id: number;
-  purchaseNo: string; // Added from schema (P-00001 format)
+  purchaseNo: string;
   totalAmount: number;
   totalPaid: number;
   dueDate: string;
@@ -241,7 +270,7 @@ export interface Purchase {
   Suppliers?: Supplier;
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
@@ -256,10 +285,11 @@ export interface PurchaseItem {
   product_id: number;
   Products?: Product;
   purchaseItemSerials?: Array<{
-    // Added from schema
     id: number;
     purchaseItem_id: number;
     serial_id: number;
+    purchasedPrice: number; // Added: from PurchaseItemSerials
+    purchasedAt: string;
     ProductSerials?: ProductSerial;
   }>;
 }
@@ -275,7 +305,7 @@ export interface CreatePurchaseData {
     product_id: number;
     quantity: number;
     unitPrice: number;
-    serials?: string[]; // For serialized products
+    serials?: string[];
   }>;
 }
 
@@ -294,7 +324,7 @@ export interface UpdatePurchaseData {
 
 export interface Supplier {
   id: number;
-  suppId?: string; // Added from schema
+  suppId?: string;
   name: string;
   email?: string;
   phone: string;
@@ -303,7 +333,7 @@ export interface Supplier {
 
 export interface PurchaseReturn {
   id: number;
-  returnNo: string; // Added from schema (PUR-00001 format)
+  returnNo: string;
   totalPaid: number;
   note: string;
   purchase_id: number;
@@ -314,7 +344,7 @@ export interface PurchaseReturn {
   Purchases?: Purchase;
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
@@ -330,17 +360,18 @@ export interface PurchaseReturnItem {
   purchaseReturn_id: number;
   Products?: Product;
   purchaseReturnItemSerials?: Array<{
-    // Added from schema
     id: number;
     purchaseReturnItem_id: number;
     serial_id: number;
+    returnedPrice: number; // Added: from PurchaseReturnItemSerials
+    returnedAt: string;
     ProductSerials?: ProductSerial;
   }>;
 }
 
 export interface Exchange {
   id: number;
-  exchangeNo: string; // Added from schema (EX-00001 format)
+  exchangeNo: string;
   totalPaid: number;
   totalPayback: number;
   note: string;
@@ -352,13 +383,13 @@ export interface Exchange {
   Sales?: Sale;
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
   Customers?: {
     id: number;
-    custId?: string; // Added from schema
+    custId?: string;
     name: string;
     email?: string;
     phone: string;
@@ -380,11 +411,12 @@ export interface ExchangeItem {
   oldProduct?: Product;
   newProduct?: Product;
   exchangeItemSerials?: Array<{
-    // Added from schema
     id: number;
     exchangeItem_id: number;
     serial_id_old: number;
     serial_id_new: number;
+    exchangePrice: number; // Added: from ExchangeItemSerials
+    exchangedAt: string;
     OldProductSerials?: ProductSerial;
     NewProductSerials?: ProductSerial;
   }>;
@@ -392,7 +424,7 @@ export interface ExchangeItem {
 
 export interface Service {
   id: number;
-  serviceNo: string; // Added from schema (SV-00001 format)
+  serviceNo: string;
   serviceProductName: string;
   serviceDescription: string;
   serviceCost: number;
@@ -403,7 +435,7 @@ export interface Service {
   updatedAt: string;
   Customers?: {
     id: number;
-    custId?: string; // Added from schema
+    custId?: string;
     name: string;
     email?: string;
     phone: string;
@@ -411,7 +443,7 @@ export interface Service {
   };
   Users?: {
     id: number;
-    userId?: string; // Added from schema
+    userId?: string;
     name: string;
     email: string;
   };
@@ -419,34 +451,34 @@ export interface Service {
 
 export interface Customer {
   id: number;
-  custId?: string; // Added from schema
+  custId?: string;
   name: string;
   email?: string;
   phone: string;
   address?: string;
   Sales?: Array<{
     id: number;
-    saleNo?: string; // Added from schema
+    saleNo?: string;
     totalAmount: number;
     totalPaid: number;
     createdAt: string;
   }>;
   SalesReturn?: Array<{
     id: number;
-    returnNo?: string; // Added from schema
+    returnNo?: string;
     total_payback: number;
     createdAt: string;
   }>;
   Exchanges?: Array<{
     id: number;
-    exchangeNo?: string; // Added from schema
+    exchangeNo?: string;
     totalPaid: number;
     totalPayback: number;
     createdAt: string;
   }>;
   Services?: Array<{
     id: number;
-    serviceNo?: string; // Added from schema
+    serviceNo?: string;
     serviceProductName: string;
     serviceCost: number;
     serviceStatus: string;
@@ -468,14 +500,15 @@ export interface UpdateCustomerRequest {
 }
 
 export interface User {
+  user: any;
   id: number;
-  userId?: string; // Added from schema
+  userId?: string;
   name: string;
   email: string;
   phone: string;
   address?: string;
-  password?: string; // Only for create/update
-  status: "Active" | "Inactive"; // From schema enum
+  password?: string;
+  status: "Active" | "Inactive";
   role_id: number;
   createdAt: string;
   updatedAt: string;
@@ -484,11 +517,12 @@ export interface User {
     name: string;
   };
 }
+
 export interface Roles {
   id: number;
   name: string;
 }
-// For backward compatibility - keep existing interfaces but add missing properties
+
 export interface SaleSummary extends Omit<Sale, "SalesItems"> {
   created_at: string;
 }
@@ -526,8 +560,7 @@ export interface SalesReturnItemFrontend {
   return_reason: string;
 }
 
-export interface SalesReturnFrontend
-  extends Omit<SalesReturn, "SalesReturnItems"> {
+export interface SalesReturnFrontend extends Omit<SalesReturn, "SalesReturnItems"> {
   return_number: string;
   original_invoice: string;
   customer_name: string;
@@ -552,8 +585,7 @@ export interface PurchaseReturnItemFrontend {
   return_reason: string;
 }
 
-export interface PurchaseReturnFrontend
-  extends Omit<PurchaseReturn, "PurchasesReturnItems"> {
+export interface PurchaseReturnFrontend extends Omit<PurchaseReturn, "PurchasesReturnItems"> {
   return_number: string;
   original_invoice: string;
   supplier_name: string;
@@ -681,7 +713,22 @@ export interface DashboardMetrics {
   exchangeSummary: ExchangeSummary[];
   serviceSummary: ServiceSummary[];
 }
-
+// Transaction interfaces for product history
+export interface ProductTransaction {
+  id: number;
+  date: string;
+  quantity: number;
+  price: number;
+  total: number;
+  customer?: string;
+  supplier?: string;
+  invoiceNumber?: string;
+  status?: string;
+  serial?: string;
+  isOldProduct?: boolean;
+  oldProductName?: string;
+  newProductName?: string;
+}
 export interface Transaction {
   id: number;
   date: string;
@@ -711,14 +758,101 @@ export interface AuthResponse {
   user: User;
   token: string;
 }
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ErrorResponse {
+  message: string;
+  error?: string;
+  duplicates?: string[];
+}
+
+// Payment type for Cash In (due payments)
+export interface Payment {
+  id: number;
+  sale_id: number;
+  customer_id: number;
+  user_id: number;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  notes?: string;
+  reference_number?: string;
+  createdAt: string;
+  updatedAt: string;
+  Sales?: Sale;
+  Customers?: Customer;
+  Users?: User;
+}
+// PreOrder type
+export interface PreOrder {
+  id: number;
+  productName: string;
+  quantity: number;
+  specification?: string;
+  details?: string;
+  price: number;
+  totalAmount: number;
+  amountPaid: number;
+  remainingAmount: number;
+  deliveryDate: string;
+  status: "pending" | "confirmed" | "delivered" | "cancelled";
+  customer_id?: number;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  notes?: string;
+  user_id: number;
+  createdAt: string;
+  updatedAt: string;
+  Customers?: Customer;
+  Users?: User;
+}
+
+// Expense type
+export interface Expense {
+  id: number;
+  category_id: number;
+  amount: number;
+  date: string;
+  details: string;
+  month?: string;
+  sale_id?: number;
+  customer_id?: number;
+  vendor_name?: string;
+  user_id: number;
+  createdAt: string;
+  updatedAt: string;
+  ExpenseCategories?: ExpenseCategory;
+  Sales?: Sale;
+  Customers?: Customer;
+  Users?: User;
+}
+
+// ExpenseCategory type
+export interface ExpenseCategory {
+  id: number;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
+<<<<<<< Updated upstream
     baseUrl: "https://fit-uzbea-backend.vercel.app/api" || "/api",
+=======
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+>>>>>>> Stashed changes
     prepareHeaders: (headers, { endpoint }) => {
       headers.set("Content-Type", "application/json");
 
-      // Add cache control headers for auth endpoints
       if (endpoint === "getMe" || endpoint.includes("auth")) {
         headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
         headers.set("Pragma", "no-cache");
@@ -758,6 +892,9 @@ export const api = createApi({
     "Supplier",
     "Permission",
     "Role",
+    "PreOrder",
+    "Payment",
+    "Expense",
   ],
   endpoints: (build) => ({
     getDashboardMetrics: build.query<DashboardMetrics, void>({
@@ -765,7 +902,6 @@ export const api = createApi({
       providesTags: ["DashboardMetrics"],
     }),
 
-    // For products search
     searchProducts: build.query<Product[], string>({
       query: (searchTerm) => ({
         url: `product/search`,
@@ -774,7 +910,6 @@ export const api = createApi({
       providesTags: ["Product"],
     }),
 
-    // For customers search
     searchCustomers: build.query<Customer[], string>({
       query: (searchTerm) => ({
         url: `customer/search`,
@@ -782,6 +917,7 @@ export const api = createApi({
       }),
       providesTags: ["Customer"],
     }),
+
     createSaleFromPOS: build.mutation<
       Sale,
       {
@@ -807,26 +943,28 @@ export const api = createApi({
       }),
       invalidatesTags: ["Sale", "Product"],
     }),
-    // Get POS Products (for barcode scanning)
+
     getPOSProducts: build.query<Product[], void>({
       query: () => "/products/pos",
       providesTags: ["Product"],
     }),
-    // Scan barcode
+
     scanBarcode: build.query<Product, string>({
       query: (barcode) => `/products/barcode/${barcode}`,
       providesTags: ["Product"],
     }),
-    // Products
+
     getProducts: build.query<Product[], void>({
       query: () => "/product",
       providesTags: ["Product"],
     }),
+
     getProduct: build.query<Product, number>({
       query: (id) => `/product/${id}`,
       providesTags: (result, error, id) => [{ type: "Product", id }],
     }),
-    createProduct: build.mutation<Product, Partial<Product>>({
+
+    createProduct: build.mutation<Product, CreateProductRequest>({
       query: (product) => ({
         url: "/product",
         method: "POST",
@@ -834,9 +972,10 @@ export const api = createApi({
       }),
       invalidatesTags: ["Product"],
     }),
+
     updateProduct: build.mutation<
       Product,
-      { id: number; product: Partial<Product> }
+      { id: number; product: Partial<CreateProductRequest> }
     >({
       query: ({ id, product }) => ({
         url: `/product/${id}`,
@@ -845,6 +984,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Product", id }],
     }),
+
     deleteProduct: build.mutation<void, number>({
       query: (id) => ({
         url: `/product/${id}`,
@@ -852,11 +992,12 @@ export const api = createApi({
       }),
       invalidatesTags: ["Product"],
     }),
-    // Categories
+
     getCategories: build.query<Category[], void>({
       query: () => "/categories",
       providesTags: ["Category"],
     }),
+
     createCategory: build.mutation<Category, Partial<Category>>({
       query: (category) => ({
         url: "/categories",
@@ -885,40 +1026,45 @@ export const api = createApi({
       }),
       invalidatesTags: ["Category"],
     }),
-    // Product History
+
     getProductSales: build.query<Transaction[], number>({
       query: (productId) => `product/${productId}/sales`,
       providesTags: (result, error, productId) => [
         { type: "ProductSales", id: productId },
       ],
     }),
+
     getProductExchanges: build.query<Transaction[], number>({
       query: (productId) => `product/${productId}/exchanges`,
       providesTags: (result, error, productId) => [
         { type: "ProductExchanges", id: productId },
       ],
     }),
+
     getProductSalesReturns: build.query<Transaction[], number>({
       query: (productId) => `product/${productId}/sales-returns`,
       providesTags: (result, error, productId) => [
         { type: "ProductSalesReturns", id: productId },
       ],
     }),
+
     getProductPurchases: build.query<Transaction[], number>({
       query: (productId) => `product/${productId}/purchases`,
       providesTags: (result, error, productId) => [
         { type: "ProductPurchases", id: productId },
       ],
     }),
-    // Sales
+
     getSales: build.query<Sale[], void>({
       query: () => "/sale",
       providesTags: ["Sale"],
     }),
+
     getSale: build.query<Sale, number>({
       query: (id) => `/sale/${id}`,
       providesTags: (result, error, id) => [{ type: "Sale", id }],
     }),
+
     createSale: build.mutation<Sale, CreateSaleRequest>({
       query: (sale) => ({
         url: "/sale",
@@ -927,6 +1073,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Sale", "Product"],
     }),
+
     updateSale: build.mutation<Sale, { id: number; sale: UpdateSaleRequest }>({
       query: ({ id, sale }) => ({
         url: `/sale/${id}`,
@@ -938,6 +1085,7 @@ export const api = createApi({
         "Sale",
       ],
     }),
+
     deleteSale: build.mutation<{ message: string }, number>({
       query: (id) => ({
         url: `/sale/${id}`,
@@ -945,10 +1093,12 @@ export const api = createApi({
       }),
       invalidatesTags: ["Sale", "Product"],
     }),
+
     getSalesStats: build.query<SalesStats, void>({
       query: () => "/sale/stats",
       providesTags: ["Sale"],
     }),
+
     getSalesByDateRange: build.query<
       Sale[],
       { startDate: string; endDate: string }
@@ -957,15 +1107,17 @@ export const api = createApi({
         `/sales/date-range?startDate=${startDate}&endDate=${endDate}`,
       providesTags: ["Sale"],
     }),
-    // SalesReturns
+
     getSalesReturns: build.query<SalesReturn[], void>({
       query: () => "salesreturn",
       providesTags: ["SalesReturn"],
     }),
+
     getSalesReturn: build.query<SalesReturn, number>({
       query: (id) => `salesreturn/${id}`,
       providesTags: (result, error, id) => [{ type: "SalesReturn", id }],
     }),
+
     createSalesReturn: build.mutation<SalesReturn, CreateSalesReturnRequest>({
       query: (salesReturn) => ({
         url: "salesreturn",
@@ -974,6 +1126,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["SalesReturn"],
     }),
+
     updateSalesReturn: build.mutation<
       SalesReturn,
       { id: number; salesReturn: Partial<SalesReturn> }
@@ -985,6 +1138,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "SalesReturn", id }],
     }),
+
     deleteSalesReturn: build.mutation<void, number>({
       query: (id) => ({
         url: `salesreturn/${id}`,
@@ -992,22 +1146,26 @@ export const api = createApi({
       }),
       invalidatesTags: ["SalesReturn"],
     }),
-    // Purchases
+
     getPurchases: build.query<Purchase[], void>({
       query: () => "/purchase",
       providesTags: ["Purchase"],
     }),
+
     getPurchaseStatistics: build.query<any, void>({
       query: () => "/purchase/statistics",
     }),
+
     getPurchasesBySupplier: build.query<Purchase[], number>({
       query: (supplierId) => `/supplier/${supplierId}`,
       providesTags: ["Purchase"],
     }),
+
     getPurchase: build.query<Purchase, number>({
       query: (id) => `/purchase/${id}`,
       providesTags: (result, error, id) => [{ type: "Purchase", id }],
     }),
+
     createPurchase: build.mutation<Purchase, CreatePurchaseData>({
       query: (purchaseData) => ({
         url: "/purchase",
@@ -1016,6 +1174,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
+
     updatePurchase: build.mutation<
       Purchase,
       { id: number; data: UpdatePurchaseData }
@@ -1030,6 +1189,7 @@ export const api = createApi({
         "Purchase",
       ],
     }),
+
     deletePurchase: build.mutation<void, number>({
       query: (id) => ({
         url: `/purchase/${id}`,
@@ -1037,15 +1197,17 @@ export const api = createApi({
       }),
       invalidatesTags: ["Purchase"],
     }),
-    // PurchaseReturns
+
     getPurchaseReturns: build.query<PurchaseReturn[], void>({
       query: () => "purchasereturn",
       providesTags: ["PurchaseReturn"],
     }),
+
     getPurchaseReturn: build.query<PurchaseReturn, number>({
       query: (id) => `purchasereturn/${id}`,
       providesTags: (result, error, id) => [{ type: "PurchaseReturn", id }],
     }),
+
     createPurchaseReturn: build.mutation<
       PurchaseReturn,
       Partial<PurchaseReturn>
@@ -1057,6 +1219,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["PurchaseReturn"],
     }),
+
     updatePurchaseReturn: build.mutation<
       PurchaseReturn,
       { id: number; purchaseReturn: Partial<PurchaseReturn> }
@@ -1070,6 +1233,7 @@ export const api = createApi({
         { type: "PurchaseReturn", id },
       ],
     }),
+
     deletePurchaseReturn: build.mutation<void, number>({
       query: (id) => ({
         url: `purchasereturn/${id}`,
@@ -1077,15 +1241,17 @@ export const api = createApi({
       }),
       invalidatesTags: ["PurchaseReturn"],
     }),
-    // Exchanges
+
     getExchanges: build.query<Exchange[], void>({
       query: () => "exchange",
       providesTags: ["Exchange"],
     }),
+
     getExchange: build.query<Exchange, number>({
       query: (id) => `exchange/${id}`,
       providesTags: (result, error, id) => [{ type: "Exchange", id }],
     }),
+
     createExchange: build.mutation<Exchange, Partial<Exchange>>({
       query: (exchange) => ({
         url: "exchange",
@@ -1094,6 +1260,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Exchange"],
     }),
+
     updateExchange: build.mutation<
       Exchange,
       { id: number; exchange: Partial<Exchange> }
@@ -1105,6 +1272,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Exchange", id }],
     }),
+
     deleteExchange: build.mutation<void, number>({
       query: (id) => ({
         url: `exchange/${id}`,
@@ -1112,15 +1280,17 @@ export const api = createApi({
       }),
       invalidatesTags: ["Exchange"],
     }),
-    // Services
+
     getServices: build.query<Service[], void>({
       query: () => "service",
       providesTags: ["Service"],
     }),
+
     getService: build.query<Service, number>({
       query: (id) => `service/${id}`,
       providesTags: (result, error, id) => [{ type: "Service", id }],
     }),
+
     createService: build.mutation<Service, Partial<Service>>({
       query: (service) => ({
         url: "service",
@@ -1129,6 +1299,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Service"],
     }),
+
     updateService: build.mutation<
       Service,
       { id: number; service: Partial<Service> }
@@ -1140,6 +1311,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Service", id }],
     }),
+
     deleteService: build.mutation<void, number>({
       query: (id) => ({
         url: `service/${id}`,
@@ -1147,11 +1319,12 @@ export const api = createApi({
       }),
       invalidatesTags: ["Service"],
     }),
-    // Customers
+
     getCustomers: build.query<Customer[], void>({
       query: () => "/customer",
       providesTags: ["Customer"],
     }),
+
     getCustomersWithPagination: build.query<
       PaginatedCustomersResponse,
       { page?: number; limit?: number; search?: string }
@@ -1160,10 +1333,12 @@ export const api = createApi({
         `/customers/pagination?page=${page}&limit=${limit}&search=${search}`,
       providesTags: ["Customer"],
     }),
+
     getCustomer: build.query<Customer, number>({
       query: (id) => `/customer/${id}`,
       providesTags: (result, error, id) => [{ type: "Customer", id }],
     }),
+
     createCustomer: build.mutation<Customer, CreateCustomerRequest>({
       query: (customer) => ({
         url: "/customer",
@@ -1172,6 +1347,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Customer"],
     }),
+
     updateCustomer: build.mutation<
       Customer,
       { id: number; customer: UpdateCustomerRequest }
@@ -1186,6 +1362,7 @@ export const api = createApi({
         "Customer",
       ],
     }),
+
     deleteCustomer: build.mutation<{ message: string }, number>({
       query: (id) => ({
         url: `/customer/${id}`,
@@ -1193,11 +1370,12 @@ export const api = createApi({
       }),
       invalidatesTags: ["Customer"],
     }),
+
     getCustomerStats: build.query<CustomerStats, void>({
       query: () => "/customer/stats",
       providesTags: ["Customer"],
     }),
-    // Authentication
+
     login: build.mutation<AuthResponse, LoginRequest>({
       query: (credentials) => ({
         url: "/auth/login",
@@ -1206,6 +1384,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
     register: build.mutation<AuthResponse, RegisterRequest>({
       query: (userData) => ({
         url: "/auth/register",
@@ -1214,6 +1393,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
     logout: build.mutation<void, void>({
       query: () => ({
         url: "/auth/logout",
@@ -1221,10 +1401,12 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
     getMe: build.query<User, void>({
       query: () => "/auth/me",
       providesTags: ["User"],
     }),
+
     updateProfile: build.mutation<User, Partial<User>>({
       query: (userData) => ({
         url: "/auth/profile",
@@ -1233,6 +1415,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
     getSuppliers: build.query<Supplier[], void>({
       query: () => "/supplier",
       providesTags: ["Supplier"],
@@ -1242,7 +1425,7 @@ export const api = createApi({
       query: (id) => `/supplier/${id}`,
       providesTags: (result, error, id) => [{ type: "Supplier", id }],
     }),
-    // Suppliers
+
     createSupplier: build.mutation<Supplier, Partial<Supplier>>({
       query: (supplier) => ({
         url: "/supplier",
@@ -1251,6 +1434,7 @@ export const api = createApi({
       }),
       invalidatesTags: ["Supplier"],
     }),
+
     updateSupplier: build.mutation<
       Supplier,
       { id: number; supplier: Partial<Supplier> }
@@ -1262,6 +1446,7 @@ export const api = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [{ type: "Supplier", id }],
     }),
+
     deleteSupplier: build.mutation<void, number>({
       query: (id) => ({
         url: `/supplier/${id}`,
@@ -1269,23 +1454,16 @@ export const api = createApi({
       }),
       invalidatesTags: ["Supplier"],
     }),
-    // For sales search
+
     searchSales: build.query<Sale[], string>({
       query: (searchTerm) =>
         `sale/search?query=${encodeURIComponent(searchTerm)}`,
-      // transformResponse: (response: { success: boolean; data: Sale[] }) => {
-      //   return response.data || [];
-      // },
       providesTags: ["Sale"],
     }),
-    // For purchases search
+
     searchPurchases: build.query<Purchase[], string>({
       query: (searchTerm) =>
         `purchase/search?query=${encodeURIComponent(searchTerm)}`,
-      // transformResponse: (response: { success: boolean; data: Purchase[] }) => {
-      //   console.log("Purchase Search API Response:", response);
-      //   return response.data || [];
-      // },
       providesTags: ["Purchase"],
     }),
 
@@ -1296,7 +1474,6 @@ export const api = createApi({
       ],
     }),
 
-    // Get serials by product ID and status
     getAvailableSerials: build.query<
       ProductSerial[],
       { productId: number; status?: string }
@@ -1308,7 +1485,6 @@ export const api = createApi({
       ],
     }),
 
-    // Get sale by invoice number
     getSaleByInvoice: build.query<Sale, string>({
       query: (invoiceNumber) => `/sale/invoice/${invoiceNumber}`,
       providesTags: (result, error, invoiceNumber) => [
@@ -1316,7 +1492,6 @@ export const api = createApi({
       ],
     }),
 
-    // Get purchase by invoice number
     getPurchaseByInvoice: build.query<Purchase, string>({
       query: (invoiceNumber) => `/purchase/invoice/${invoiceNumber}`,
       providesTags: (result, error, invoiceNumber) => [
@@ -1452,10 +1627,41 @@ export const api = createApi({
     >({
       query: () => `/users/roles`,
       transformResponse: (response: { success: boolean; roles: any[] }) => {
-        // Extract the array from the response
         return response.roles || [];
       },
       providesTags: ["User"],
+    }),
+
+    createRole: build.mutation<
+      { id: number; name: string },
+      { name: string; description?: string }
+    >({
+      query: (role) => ({
+        url: "/roles",
+        method: "POST",
+        body: role,
+      }),
+      invalidatesTags: ["Role"],
+    }),
+
+    updateRole: build.mutation<
+      { id: number; name: string },
+      { id: number; role: { name: string; description?: string } }
+    >({
+      query: ({ id, role }) => ({
+        url: `/roles/${id}`,
+        method: "PUT",
+        body: role,
+      }),
+      invalidatesTags: ["Role"],
+    }),
+
+    deleteRole: build.mutation<{ success: boolean; message: string }, number>({
+      query: (id) => ({
+        url: `/roles/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Role"],
     }),
 
     getPermissions: build.query<Permission[], void>({
@@ -1503,6 +1709,42 @@ export const api = createApi({
       invalidatesTags: (result, error, { userId }) => [
         { type: "User", id: userId },
       ],
+    }),
+    createPreOrder: build.mutation<PreOrder, Partial<PreOrder>>({
+      query: (preOrderData) => ({
+        url: '/pre-orders',
+        method: 'POST',
+        body: preOrderData,
+      }),
+      invalidatesTags: ['Sale'], // Add this to invalidate sale cache if needed
+    }),
+
+    createPayment: build.mutation<Payment, Partial<Payment>>({
+      query: (paymentData) => ({
+        url: '/payments',
+        method: 'POST',
+        body: paymentData,
+      }),
+      invalidatesTags: ['Sale', 'Customer'], // Invalidate sale and customer cache
+    }),
+
+    getDueSales: build.query<Sale[], void>({
+      query: () => '/sales/due',
+      providesTags: ['Sale'], // Add tag for cache invalidation
+    }),
+
+    createExpense: build.mutation<Expense, Partial<Expense>>({
+      query: (expenseData) => ({
+        url: '/expenses',
+        method: 'POST',
+        body: expenseData,
+      }),
+      // Add tags if you have them for expenses
+    }),
+
+    getExpenseCategories: build.query<ExpenseCategory[], void>({
+      query: () => '/expense-categories',
+      providesTags: ['Category'], // Use existing category tag or create new one
     }),
   }),
 });
@@ -1593,9 +1835,17 @@ export const {
   useDeactivateUserMutation,
   useActivateUserMutation,
   useGetRolesQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
   useGetPermissionsQuery,
   useGetRolePermissionsQuery,
   useUpdateRolePermissionsMutation,
   useGetUserPermissionsQuery,
   useUpdateUserPermissionsMutation,
+  useCreatePreOrderMutation,
+  useCreatePaymentMutation,
+  useGetDueSalesQuery,
+  useCreateExpenseMutation,
+  useGetExpenseCategoriesQuery,
 } = api;
