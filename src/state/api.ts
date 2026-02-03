@@ -845,7 +845,7 @@ export interface ExpenseCategory {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://fit-uzbea-backend.vercel.app/",
+    baseUrl: "https://fit-uzbea-backend.vercel.app/api",
     prepareHeaders: (headers, { endpoint }) => {
       headers.set("Content-Type", "application/json");
 
