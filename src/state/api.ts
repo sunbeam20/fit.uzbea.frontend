@@ -847,7 +847,7 @@ export const api = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl:
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "https://fit.uzbea.com/",
+      "https://fit-uzbea-backend.vercel.app/api",
     prepareHeaders: (headers, { endpoint }) => {
       headers.set("Content-Type", "application/json");
 
